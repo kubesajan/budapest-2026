@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Budapešť 2026 — Rodinný výlet</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 20px;
+    line-height: 1.6;
+    color: #1a1a2e;
+    background: #faf8f5;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 80px; /* room for bottom nav */
+  }
+
+  /* ── Typography ── */
+  h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+  h2 { font-size: 1.5rem; font-weight: 650; letter-spacing: -0.01em; margin: 1.5em 0 0.5em; }
+  h3 { font-size: 1.2rem; font-weight: 600; margin: 1em 0 0.4em; }
+  p { margin-bottom: 0.8em; max-width: 64ch; }
+  a { color: #b8860b; text-decoration-thickness: from-font; text-underline-offset: 0.2em; }
+  a:hover { color: #8b6508; }
+  small { font-size: 0.85em; color: #666; }
+
+  /* ── Layout ── */
+  .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, #16213e 0%, #1a1a2e 50%, #0f3460 100%);
+    color: #faf8f5;
+    padding: 60px 20px 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 70% 30%, rgba(255,215,0,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 80%, rgba(184,134,11,0.06) 0%, transparent 50%);
+  }
+  .hero-content { position: relative; z-index: 1; }
+  .hero h1 { font-size: 2.2rem; margin-bottom: 0.3em; }
+  .hero .subtitle { font-size: 1.1rem; opacity: 0.85; font-weight: 400; }
+  .hero .dates { font-size: 1rem; opacity: 0.7; margin-top: 0.8em; }
+  .hero-photo {
+    width: 100%; max-width: 500px; height: 200px;
+    margin: 24px auto 0;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.3); font-size: 0.85rem;
+  }
+
+  /* ── Section ── */
+  section { padding: 40px 0; }
+  section + section { border-top: 1px solid #e8e4dc; }
+
+  /* ── Day Cards ── */
+  .day-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border-left: 4px solid #b8860b;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .day-card[open] { border-left-color: #0f3460; }
+  .day-card summary {
+    list-style: none;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 1.1rem; font-weight: 600;
+    min-height: 48px;
+  }
+  .day-card summary::-webkit-details-marker { display: none; }
+  .day-card summary::after {
+    content: '+';
+    font-size: 1.4rem; font-weight: 400; color: #b8860b;
+    margin-left: auto; min-width: 32px; text-align: center;
+    transition: transform 0.2s;
+  }
+  .day-card[open] summary::after { content: '−'; color: #0f3460; }
+  .day-card .day-content { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; }
+  .day-badge {
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    background: #b8860b; color: #fff; padding: 3px 10px; border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+  .day-card[open] .day-badge { background: #0f3460; }
+
+  /* ── Activity Items ── */
+  .activity { margin: 12px 0; padding-left: 20px; border-left: 2px solid #e8e4dc; }
+  .activity-time { font-size: 0.8rem; font-weight: 600; color: #b8860b; text-transform: uppercase; letter-spacing: 0.05em; }
+  .activity-name { font-weight: 600; }
+  .activity-note { font-size: 0.9rem; color: #555; }
+  .rest-marker {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.85rem; color: #8b6508; background: #fef9e7;
+    padding: 4px 12px; border-radius: 16px; margin: 8px 0;
+  }
+  .rest-marker::before { content: '☕'; }
+
+  /* ── Info Cards ── */
+  .info-grid {
+    display: grid; grid-template-columns: 1fr;
+    gap: 16px; margin-top: 16px;
+  }
+  @media (min-width: 600px) {
+    .info-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .info-card {
+    background: #fff; border-radius: 10px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .info-card h4 { font-size: 1rem; margin-bottom: 8px; color: #0f3460; }
+
+  /* ── Map Links ── */
+  .map-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 16px; background: #fff; border: 1.5px solid #e8e4dc;
+    border-radius: 8px; font-size: 0.9rem; text-decoration: none; color: #1a1a2e;
+    margin: 4px; min-height: 48px; min-width: 48px;
+  }
+  .map-link::before { content: '📍'; font-size: 1.1rem; }
+  .map-link:active { background: #f0ede8; }
+
+  /* ── Beer Corner ── */
+  .beer-card {
+    background: linear-gradient(135deg, #fef9e7, #faf3d0);
+    border-radius: 10px; padding: 20px; margin: 12px 0;
+    border: 1px solid #e8dca0;
+  }
+  .beer-card h4 { color: #8b6508; }
+
+  /* ── Accessibility Badge ── */
+  .access-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.8rem; padding: 2px 8px; border-radius: 12px;
+    font-weight: 500;
+  }
+  .access-ok { background: #e8f5e9; color: #2e7d32; }
+  .access-caution { background: #fff3e0; color: #e65100; }
+  .access-limited { background: #fce4ec; color: #c62828; }
+
+  /* ── Bottom Nav ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(250,248,245,0.96);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid #e8e4dc;
+    display: flex; justify-content: space-around;
+    padding: 8px 0 env(safe-area-inset-bottom, 8px);
+    z-index: 100;
+  }
+  .bottom-nav a {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 0.7rem; color: #888; text-decoration: none;
+    padding: 8px 12px; border-radius: 8px; min-width: 56px; min-height: 48px;
+    justify-content: center;
+  }
+  .bottom-nav a .nav-icon { font-size: 1.3rem; }
+  .bottom-nav a:active { background: #e8e4dc; color: #1a1a2e; }
+
+  /* ── Print ── */
+  @media print {
+    body { font-size: 14pt; color: #000; background: #fff; padding: 0; }
+    .bottom-nav, .hero-photo { display: none !important; }
+    .hero { background: #fff !important; color: #000 !important; padding: 20px 0 !important; }
+    .hero::after { display: none; }
+    .day-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .day-card[open] { border-left-color: #000; }
+    .day-card summary { pointer-events: none; }
+    .day-card summary::after { display: none; }
+    .day-card .day-content { display: block !important; }
+    a { color: #000; text-decoration: underline; }
+    .container { max-width: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HERO ═══ -->
+<header class="hero" id="top">
+  <div class="hero-content">
+    <h1>Budapešť 2026</h1>
+    <p class="subtitle">Babičce k 80. narozeninám ❤️</p>
+    <p class="dates">25.–29. září 2026</p>
+    <div class="hero-photo">[photo: Budapest at night]</div>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ═══ THE TRIP ═══ -->
+<section id="trip">
+  <h2>O výletu</h2>
+  <p>
+    Na konci září se vydáme společně do Budapešti — babička, rodiče a my.
+    Je to dárek k babiččiným 80. narozeninám. Čtyři noci v srdci města,
+    pomalé tempo, dobré jídlo a místa, na která se nezapomíná.
+  </p>
+  <div class="info-grid">
+    <div class="info-card">
+      <h4>🗓️ Termín</h4>
+      <p>25.–29. září 2026<br><small>čtvrtek příjezd, pondělí odjezd</small></p>
+    </div>
+    <div class="info-card">
+      <h4>🚂 Cesta</h4>
+      <p>Vlak Ostrava → Budapest<br><small>přímý spoj, odpoledne 25.9.</small></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WHERE WE'RE STAYING ═══ -->
+<section id="stay">
+  <h2>Kde bydlíme</h2>
+  <p>
+    Kiss József utca 8, Budapešť IX. — Ferencváros.
+    Klidná ulice v dosahu všeho důležitého. Byt je ve 3. patře bez výtahu,
+    takže plánujeme vyrazit vždy dopoledne, vrátit se odpoledne na odpočinek,
+    a večer zase ven, pokud bude energie.
+  </p>
+  <a class="map-link" href="https://maps.google.com/?q=Kiss+J%C3%B3zsef+utca+8,+Budapest" target="_blank" rel="noopener">
+    Otevřít v Google Maps
+  </a>
+  <p style="margin-top:12px;"><small>Nejbližší zastávka tramvaje 4/6: Harminckettesek tere (~5 min chůze).</small></p>
+</section>
+
+<!-- ═══ DAY BY DAY ═══ -->
+<section id="days">
+  <h2>Den po dni</h2>
+
+  <!-- Day 1: Arrival -->
+  <details class="day-card" id="day1">
+    <summary>
+      <span class="day-badge">Den 1</span>
+      Čtvrtek 25. září — Příjezd
+    </summary>
+    <div class="day-content">
+      <div class="activity">
+        <div class="activity-time">Odpoledne</div>
+        <div class="activity-name">Příjezd na Budapest Keleti</div>
+        <div class="activity-note">Taxi / Bolt na apartmán. Keleti může být náročné se zavazadly — doporučujeme vzít si čas.</div>
+      </div>
+      <div class="rest-marker">Odpočinek na apartmánu — zabydlení, káva</div>
+      <div class="activity">
+        <div class="activity-time">Večer</div>
+        <div class="activity-name">Lehká procházka po okolí</div>
+        <div class="activity-note">Ferencváros večer — klidné ulice, první dojem z města. Lehká večeře v okolí nebo dovoz.</div>
+      </div>
+    </div>
+  </details>
+
+  <!-- Day 2: Market + M1 + Bazilika -->
+  <details class="day-card" id="day2">
+    <summary>
+      <span class="day-badge">Den 2</span>
+      Pátek 26. září — Trh, metro a káva
+    </summary>
+    <div class="day-content">
+      <div class="activity">
+        <div class="activity-time">Dopoledne</div>
+        <div class="activity-name">Velká tržnice (Nagy Vásárcsarnok)</div>
+        <div class="activity-note">Krytá tržnice, rovný povrch, bezbariérový vstup. Mateova pasta — výborné čerstvé těstoviny. Ochutnávky, nákup maďarských specialit.</div>
+        <span class="access-badge access-ok">✓ přístupné</span>
+        <a class="map-link" href="https://maps.google.com/?q=Great+Market+Hall,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Tržnice</a>
+      </div>
+      <div class="rest-marker">Přestávka — káva u tržnice nebo návrat na apartmán</div>
+      <div class="activity">
+        <div class="activity-time">Pozdní odpoledne</div>
+        <div class="activity-name">Linka M1 — historické metro</div>
+        <div class="activity-note">Nejstarší metro v kontinentální Evropě (1896). Projedeme se historickými žlutými vozy, prohlédneme si původní stanice. Pár schodů se zábradlím — v pohodě. Nástup na Vörösmarty tér (přízemní stanice).</div>
+        <span class="access-badge access-caution">⚠ pár schodů</span>
+        <a class="map-link" href="https://maps.google.com/?q=V%C3%B6r%C3%B6smarty+t%C3%A9r+metro,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Vörösmarty tér</a>
+      </div>
+      <div class="activity">
+        <div class="activity-time">Podvečer</div>
+        <div class="activity-name">Káva u Baziliky</div>
+        <div class="activity-note">Kavárna na náměstí sv. Štěpána. Výhled na Baziliku, klidná atmosféra. Možnost výtahu na kupoli Baziliky (za poplatek, poslední patro po schodech).</div>
+        <span class="access-badge access-ok">✓ náměstí přístupné</span>
+        <a class="map-link" href="https://maps.google.com/?q=St+Stephen's+Basilica,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Bazilika</a>
+      </div>
+    </div>
+  </details>
+
+  <!-- Day 3: Buda + Parliament -->
+  <details class="day-card" id="day3">
+    <summary>
+      <span class="day-badge">Den 3</span>
+      Sobota 27. září — Budín a Parlament
+    </summary>
+    <div class="day-content">
+      <div class="activity">
+        <div class="activity-time">Dopoledne</div>
+        <div class="activity-name">Autobusem na Rybářskou baštu</div>
+        <div class="activity-note">Bus 16 nebo 216 od Deák Ferenc tér přímo k Halászbástya. Spodní terasa je bezbariérová — výhled na Parlament a Dunaj je odtud skoro stejný jako z horních věží. Pár kroků po dlažbě, v pohodě.</div>
+        <span class="access-badge access-caution">⚠ spodní terasa OK</span>
+        <a class="map-link" href="https://maps.google.com/?q=Fisherman's+Bastion,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Halászbástya</a>
+      </div>
+      <div class="rest-marker">Přestávka — kavárna v Budíně nebo návrat na apartmán</div>
+      <div class="activity">
+        <div class="activity-time">Večer</div>
+        <div class="activity-name">Parlament v noci</div>
+        <div class="activity-note">Kossuth tér — rovný, dlážděný, plně přístupný. Parlament se rozsvěcí po setmění (~18:40 v září). Jedno z nejkrásnějších míst v Budapešti. Světla svítí do cca 22:00.</div>
+        <span class="access-badge access-ok">✓ plně přístupné</span>
+        <a class="map-link" href="https://maps.google.com/?q=Kossuth+t%C3%A9r,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Kossuth tér</a>
+      </div>
+    </div>
+  </details>
+
+  <!-- Day 4: River cruise + flexible -->
+  <details class="day-card" id="day4">
+    <summary>
+      <span class="day-badge">Den 4</span>
+      Neděle 28. září — Dunaj a pohoda
+    </summary>
+    <div class="day-content">
+      <div class="activity">
+        <div class="activity-time">Dopoledne</div>
+        <div class="activity-name">Volno / Markétin ostrov</div>
+        <div class="activity-note">Markétin ostrov (Margit-sziget) — 5 km parku bez aut, úplně rovný terén, lavičky, fontána, minivláček. Ideální pro klidnou procházku.</div>
+        <span class="access-badge access-ok">✓ zcela bezbariérové</span>
+        <a class="map-link" href="https://maps.google.com/?q=Margaret+Island,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Markétin ostrov</a>
+      </div>
+      <div class="rest-marker">Odpočinek na apartmánu</div>
+      <div class="activity">
+        <div class="activity-time">Večer</div>
+        <div class="activity-name">Plavba po Dunaji</div>
+        <div class="activity-note">Klidná večerní plavba s výhledem na osvětlené město. Soukromý operátor s krytou kajutou (v září už může být chladno). Upřesníme později podle dostupných spojů. Nalodění s asistentcí — doporučujeme ověřit bezbariérový přístup při rezervaci.</div>
+        <span class="access-badge access-caution">⚠ ověřit přístup</span>
+      </div>
+    </div>
+  </details>
+
+  <!-- Day 5: Departure -->
+  <details class="day-card" id="day5">
+    <summary>
+      <span class="day-badge">Den 5</span>
+      Pondělí 29. září — Odjezd
+    </summary>
+    <div class="day-content">
+      <div class="activity">
+        <div class="activity-time">Dopoledne</div>
+        <div class="activity-name">Odjezd z Budapest Keleti</div>
+        <div class="activity-note">Ranní vlak zpět. Taxi / Bolt na nádraží. Rozloučení s Budapeští.</div>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ═══ FOOD & DRINK ═══ -->
+<section id="food">
+  <h2>Jídlo a pití</h2>
+
+  <div class="info-card" style="margin-bottom:16px;">
+    <h4>🍽️ VakVarjú</h4>
+    <p>Tradiční maďarská restaurace s moderním nádechem. Táta tu měl skvělý burger. Příjemná atmosféra, vhodné pro rodinnou večeři.</p>
+    <div class="hero-photo" style="height:160px;background:rgba(0,0,0,0.03);color:#aaa;margin-top:12px;">[photo: burger at VakVarjú]</div>
+    <a class="map-link" href="https://maps.google.com/?q=VakVarj%C3%BA+restaurant,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:8px;">📍 VakVarjú</a>
+  </div>
+
+  <div class="info-card" style="margin-bottom:16px;">
+    <h4>☕ VAJ</h4>
+    <p>Výborná kavárna — skvělá káva, dezerty, klidné posezení. Ideální na odpolední přestávku.</p>
+    <a class="map-link" href="https://maps.google.com/?q=VAJ+cafe,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 VAJ</a>
+  </div>
+
+  <div class="info-card" style="margin-bottom:16px;">
+    <h4>🥡 Dovoz</h4>
+    <p><strong>Yolofood.hu</strong> — zdravé jídlo, vhodné i pro dietní požadavky (nízkotučné). <strong>Kifli.hu</strong> — potraviny a hotová jídla s dovozem až ke dveřím. Praktické na dny, kdy se nikomu nechce ven.</p>
+  </div>
+
+  <!-- Beer Corner -->
+  <div class="beer-card">
+    <h4>🍺 Pro tátu — maďarské pivo</h4>
+    <p>Klidný podnik na craftové pivo — žádná party, jen dobré pivo a pohoda.</p>
+    <div class="info-card" style="margin-top:12px;box-shadow:none;border:1px solid #e8dca0;">
+      <h4>Élesztő</h4>
+      <p>Nejlepší craft beer bar v Budapešti. Dvorní posezení, 20+ píp, klidná atmosféra. Monyó, Fehér Nyúl, Hübris — místní pivovary, které stojí za ochutnání.</p>
+      <a class="map-link" href="https://maps.google.com/?q=%C3%89leszt%C5%91,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Élesztő</a>
+    </div>
+    <div class="info-card" style="margin-top:8px;box-shadow:none;border:1px solid #e8dca0;">
+      <h4>Beerstro 14</h4>
+      <p>14 píp maďarského craftu, steaky, klidné posezení. Blízko apartmánu.</p>
+      <a class="map-link" href="https://maps.google.com/?q=Beerstro+14,+Budapest" target="_blank" rel="noopener" style="font-size:0.8rem;padding:6px 10px;min-height:36px;margin-top:4px;">📍 Beerstro 14</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRACTICAL ═══ -->
+<section id="practical">
+  <h2>Praktické informace</h2>
+  <div class="info-grid">
+    <div class="info-card">
+      <h4>🌤️ Počasí</h4>
+      <p>Konec září: 10–22 °C. Vrstvy — ráno a večer chladno, odpoledne může být teplo. Lehká bunda na večerní Dunaj. malý deštník pro jistotu.</p>
+    </div>
+    <div class="info-card">
+      <h4>🚋 Doprava</h4>
+      <p>Tramvaj 4/6 je váš přítel — nízkopodlažní, jezdí často. Bus 16 na Budín. Taxi přes Bolt (aplikace) — spolehlivé, férové ceny.</p>
+    </div>
+    <div class="info-card">
+      <h4>🛑 Přestávky</h4>
+      <p>Mezi každou aktivitou plánujeme zastávku na kávu nebo odpočinek. Apartmán je vždy na dosah — 3. patro znamená vyrazit ráno, vrátit se odpoledne, vyrazit večer.</p>
+    </div>
+    <div class="info-card">
+      <h4>📱 Užitečné</h4>
+      <p>Bolt (taxi), Google Maps, Google Translate. Maďarsky skoro nikdo nemluví česky — němčina nebo angličtina fungují lépe.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MAP QUICK LINKS ═══ -->
+<section id="maps">
+  <h2>Vše na mapě</h2>
+  <p style="margin-bottom:16px;">Kliknutím otevřete v Google Maps:</p>
+  <div>
+    <a class="map-link" href="https://maps.google.com/?q=Kiss+J%C3%B3zsef+utca+8,+Budapest" target="_blank" rel="noopener">Apartmán 🏠</a>
+    <a class="map-link" href="https://maps.google.com/?q=Great+Market+Hall,+Budapest" target="_blank" rel="noopener">Tržnice 🛍️</a>
+    <a class="map-link" href="https://maps.google.com/?q=V%C3%B6r%C3%B6smarty+t%C3%A9r+metro,+Budapest" target="_blank" rel="noopener">M1 Metro 🚇</a>
+    <a class="map-link" href="https://maps.google.com/?q=St+Stephen's+Basilica,+Budapest" target="_blank" rel="noopener">Bazilika ⛪</a>
+    <a class="map-link" href="https://maps.google.com/?q=Fisherman's+Bastion,+Budapest" target="_blank" rel="noopener">Rybářská bašta 🏰</a>
+    <a class="map-link" href="https://maps.google.com/?q=Kossuth+t%C3%A9r,+Budapest" target="_blank" rel="noopener">Parlament 🏛️</a>
+    <a class="map-link" href="https://maps.google.com/?q=Margaret+Island,+Budapest" target="_blank" rel="noopener">Markétin ostrov 🌳</a>
+    <a class="map-link" href="https://maps.google.com/?q=VakVarj%C3%BA+restaurant,+Budapest" target="_blank" rel="noopener">VakVarjú 🍽️</a>
+    <a class="map-link" href="https://maps.google.com/?q=%C3%89leszt%C5%91,+Budapest" target="_blank" rel="noopener">Élesztő 🍺</a>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<section style="text-align:center;padding:40px 0;">
+  <p style="font-size:0.9rem;color:#999;">
+    Budapešť 2026 — rodinný výlet · září 2026
+  </p>
+</section>
+
+</div>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="bottom-nav">
+  <a href="#days"><span class="nav-icon">📅</span>Program</a>
+  <a href="#food"><span class="nav-icon">🍽️</span>Jídlo</a>
+  <a href="#maps"><span class="nav-icon">📍</span>Mapa</a>
+  <a href="#practical"><span class="nav-icon">ℹ️</span>Info</a>
+  <a href="#top"><span class="nav-icon">🏠</span>Nahoru</a>
+</nav>
+
+</body>
+</html>
