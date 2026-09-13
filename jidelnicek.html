@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#16213e">
+<title>Jídelníček na výběr — YoloFood, 25. a 26. 9. 2026</title>
+<style>
+  :root{
+    --ink:#1a1a2e; --ink-2:#4a4f63; --ink-3:#6c7186;
+    --navy:#16213e; --navy-2:#0f3460;
+    --gold:#b8860b; --gold-2:#8b6508; --gold-soft:#fef9e7;
+    --ground:#faf8f5; --card:#ffffff; --line:#e8e4dc; --line-2:#f2efe7;
+    --green:#1c7a52; --green-soft:#eaf5ef;
+    --plum:#8a2f5b; --plum-soft:#fbeaf2;
+    --blue:#0f3460; --blue-soft:#e9eff8;
+    --radius:14px; --radius-s:10px;
+    --shadow:0 1px 3px rgba(26,26,46,.06), 0 10px 24px -14px rgba(26,26,46,.24);
+    --tap:48px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%; font-size:20px}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:1rem; line-height:1.6; color:var(--ink); background:var(--ground);
+    -webkit-font-smoothing:antialiased;
+    overflow-wrap:break-word; word-break:break-word;
+    padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));
+  }
+  h1,h2,h3,h4{line-height:1.25; letter-spacing:-.01em; text-wrap:pretty}
+  button{font:inherit; color:inherit; background:none; border:0; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .wrap{max-width:760px; margin:0 auto; padding:0 16px}
+  .mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+
+  /* ---------- header ---------- */
+  .hdr{background:linear-gradient(150deg,#16213e 0%,#1a1a2e 46%,#0f3460 100%); color:#f7f8fb; padding:26px 0 22px}
+  .back{display:inline-flex; align-items:center; min-height:var(--tap); font-size:.8rem; font-weight:650;
+       color:#d9bb7a; text-decoration:none; letter-spacing:.02em; margin-left:-2px}
+  .back:active{color:#fff}
+  .eyebrow{font-size:.72rem; font-weight:650; letter-spacing:.14em; text-transform:uppercase; color:#d9bb7a}
+  .hdr h1{font-size:clamp(1.6rem,7vw,2.1rem); font-weight:700; margin:.28em 0 .34em; color:#fff}
+  .hdr p{color:#c9cfe0; font-size:.95rem; max-width:52ch}
+  .hdr p b{color:#e7c778; font-weight:650}
+
+  /* ---------- sticky controls ---------- */
+  .bar{position:sticky; top:0; z-index:30; background:color-mix(in srgb,var(--ground) 88%,transparent);
+       -webkit-backdrop-filter:saturate(180%) blur(14px); backdrop-filter:saturate(180%) blur(14px);
+       border-bottom:1px solid var(--line); padding:10px 0}
+  .seg{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; background:var(--card);
+       border:1px solid var(--line); border-radius:12px; padding:4px; box-shadow:var(--shadow)}
+  .seg button{min-height:var(--tap); border-radius:9px; font-size:.95rem; font-weight:600; color:var(--ink-2);
+       display:flex; align-items:center; justify-content:center; gap:6px}
+  .seg button[aria-selected="true"]{background:var(--navy); color:#fff}
+  .seg .cnt{font-size:.78rem; font-weight:600; opacity:.72}
+  .search{display:flex; align-items:center; gap:10px; margin-top:8px; background:var(--card);
+       border:1px solid var(--line); border-radius:12px; padding:0 14px; min-height:var(--tap); box-shadow:var(--shadow)}
+  .search svg{flex:0 0 17px; opacity:.5}
+  .search input{flex:1; min-width:0; border:0; background:none; font:inherit; font-size:1.02rem; color:var(--ink);
+       padding:10px 0; outline:none}
+  .search input::placeholder{color:var(--ink-3)}
+
+  /* ---------- chips ---------- */
+  .chips{display:flex; gap:7px; overflow-x:auto; padding:12px 20px 2px 16px; margin:0 auto; max-width:760px;
+       scrollbar-width:none; -webkit-overflow-scrolling:touch}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto; min-height:36px; padding:7px 13px; border-radius:999px; border:1px solid var(--line);
+       background:var(--card); color:var(--ink-2); font-size:.86rem; font-weight:600; white-space:nowrap}
+  .chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--ground)}
+  .chip.diet[aria-pressed="true"]{background:var(--green); border-color:var(--green); color:#fff}
+  .chip-sep{flex:0 0 auto; width:1px; background:var(--line); margin:6px 3px}
+
+  /* ---------- result line ---------- */
+  .resline{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:16px 16px 6px;
+       margin:0 auto; max-width:760px; font-size:.85rem; color:var(--ink-2)}
+  .resline b{color:var(--ink); font-weight:650}
+  .resline button{font-size:.85rem; font-weight:600; color:var(--gold-2); text-decoration:underline;
+       text-underline-offset:2px; min-height:32px}
+
+  /* ---------- sections + cards ---------- */
+  main{padding-bottom:8px}
+  .sec-h{display:flex; align-items:baseline; gap:8px; margin:26px auto 10px; max-width:760px; padding:0 16px}
+  .sec-h h2{font-size:.8rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-2)}
+  .sec-h span{font-size:.8rem; color:var(--ink-2)}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+       margin:0 auto 10px; max-width:760px; overflow:hidden}
+  .card.picked{border-color:var(--gold)}
+  .card-hd{display:flex; gap:12px; align-items:flex-start; padding:16px 15px 15px; min-height:var(--tap); cursor:pointer}
+  .card-hd:focus-visible{outline:2px solid var(--gold); outline-offset:-2px}
+  .hd-l{flex:1; min-width:0}
+  .tags{display:flex; flex-wrap:wrap; gap:5px; align-items:center; font-size:.74rem; font-weight:650;
+       letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2)}
+  .tags .line{color:var(--gold-2)}
+  .nm{font-size:1.04rem; font-weight:650; margin:5px 0 6px; letter-spacing:-.008em}
+  .nums{font-size:.95rem; color:var(--ink-2); display:flex; flex-wrap:wrap; gap:4px 7px; align-items:baseline}
+  .nums b{font-size:1.15rem; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums}
+  .nums .sep{color:var(--ink-3)}
+  .flags{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
+  .pill{font-size:.72rem; font-weight:650; padding:3px 9px; border-radius:999px; background:var(--line-2); color:var(--ink-2)}
+  .pill.keto{background:var(--blue-soft); color:var(--blue)}
+  .pill.dairyfree{background:var(--plum-soft); color:var(--plum)}
+  .pill.veg{background:var(--green-soft); color:var(--green)}
+  .pill.sugarfree{background:var(--gold-soft); color:var(--gold-2)}
+  .pill.slim{background:var(--line-2); color:var(--ink-2)}
+  .hd-r{display:flex; flex-direction:column; align-items:flex-end; gap:7px; flex:0 0 auto}
+  .hd-r2{display:flex; align-items:center; gap:8px}
+  .code{font-size:.82rem; font-weight:700; letter-spacing:.02em; padding:5px 9px; border-radius:8px;
+       background:var(--gold-soft); color:var(--gold-2); border:1px solid color-mix(in srgb,var(--gold) 30%,transparent);
+       white-space:nowrap}
+  .pick{width:var(--tap); height:var(--tap); border-radius:50%; border:1.5px solid var(--line);
+       display:flex; align-items:center; justify-content:center; font-size:1.35rem; font-weight:400;
+       color:var(--ink-2); background:var(--card); line-height:1}
+  .pick[aria-pressed="true"]{background:var(--green); border-color:var(--green); color:#fff; font-size:1.05rem}
+  .chev{width:9px; height:9px; border-right:2px solid var(--ink-3); border-bottom:2px solid var(--ink-3);
+       transform:rotate(45deg); margin:2px 4px 0 0; transition:transform .18s ease}
+  .card.open .chev{transform:rotate(-135deg)}
+  .card-bd{padding:4px 15px 18px; border-top:1px solid var(--line-2)}
+  .card-bd h4{font-size:.74rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
+       margin:14px 0 6px}
+  .card-bd h4 .hint{text-transform:none; letter-spacing:0; font-weight:500; color:var(--ink-3); font-size:.78rem}
+  .ings{font-size:.9rem; color:var(--ink-2)}
+  .nt{width:100%; border-collapse:collapse; font-size:.9rem; font-variant-numeric:tabular-nums}
+  .nt th{text-align:left; font-weight:500; color:var(--ink-2); padding:6px 0; border-bottom:1px solid var(--line-2)}
+  .nt td{text-align:right; padding:6px 0; border-bottom:1px solid var(--line-2); font-weight:600; white-space:nowrap}
+  .nt tr.tot th,.nt tr.tot td{border-bottom:1px solid var(--line); font-weight:700; color:var(--ink)}
+  .nt tr.sub{background:var(--line-2)}
+  .nt tr.sub th,.nt tr.sub td{padding-top:5px; padding-bottom:5px}
+  .nt tr.sub th{color:var(--ink-2); font-size:.85rem; padding-left:10px}
+  .nt tr.sub td{padding-right:6px}
+  .nt tr:last-child th,.nt tr:last-child td{border-bottom:0}
+  .comp{border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:8px 0}
+  .comp summary{font-weight:650; font-size:.95rem; list-style:none; display:flex; justify-content:space-between;
+       gap:10px; align-items:baseline; cursor:pointer; min-height:32px}
+  .comp summary::-webkit-details-marker{display:none}
+  .comp summary .ck{font-size:.82rem; color:var(--ink-3); font-weight:600; white-space:nowrap}
+  .comp[open] summary{margin-bottom:4px; padding-bottom:6px; border-bottom:1px solid var(--line-2)}
+  .pkg-kcal{font-size:.85rem; color:var(--ink-2); margin-bottom:4px}
+  .empty{padding:32px 16px; text-align:center; color:var(--ink-3); font-size:.95rem}
+
+  /* ---------- footer ---------- */
+  footer{padding:26px 16px 8px; margin:0 auto; max-width:760px; font-size:.85rem; color:var(--ink-2)}
+  footer p{margin-bottom:.6em}
+  footer b{color:var(--ink-2)}
+
+  /* ---------- selection tray ---------- */
+  #tray{position:fixed; left:0; right:0; bottom:0; z-index:40;
+       background:color-mix(in srgb,var(--card) 94%,transparent);
+       -webkit-backdrop-filter:saturate(180%) blur(16px); backdrop-filter:saturate(180%) blur(16px);
+       border-top:1px solid var(--line); box-shadow:0 -10px 28px -12px rgba(23,26,38,.28);
+       padding:11px 16px calc(11px + env(safe-area-inset-bottom,0px))}
+  .tray-in{max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:9px}
+  .tray-txt{font-size:.86rem; color:var(--ink-2); display:flex; align-items:baseline; gap:7px; min-width:0}
+  .tray-txt b{color:var(--ink); font-weight:700; white-space:nowrap}
+  .tray-txt .codes{font-size:.86rem; color:var(--ink); font-weight:650; min-width:0;
+       overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+       font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+  .tray-actions{display:flex; gap:8px}
+  .tray-actions button{min-height:var(--tap); border-radius:12px; font-weight:650; font-size:.92rem; flex:0 0 auto; padding:0 16px}
+  .tray-actions #copyBtn{flex:1}
+  .btn-primary{background:var(--navy-2); color:#fff}
+  .btn-ghost{border:1px solid var(--line); color:var(--ink-2); background:var(--card)}
+
+  /* ---------- toast ---------- */
+  #toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(96px + env(safe-area-inset-bottom,0px));
+       z-index:50; background:var(--ink); color:var(--ground); font-size:.85rem; font-weight:600;
+       padding:10px 16px; border-radius:999px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+       transition:opacity .2s ease; max-width:min(92vw,520px); text-align:center}
+  #toast.on{opacity:1}
+  [hidden]{display:none !important}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+
+
+  /* ---------- print ---------- */
+  @media print{
+    :root{--ink:#000; --ink-2:#333; --ink-3:#555; --line:#bbb; --line-2:#ddd; --card:#fff; --ground:#fff;
+          --gold:#8b6508; --gold-2:#8b6508; --gold-soft:#fff; --shadow:none}
+    body{background:#fff; color:#000; font-size:11pt; padding:0}
+    .hdr{background:#fff !important; color:#000; padding:0 0 10pt; border-bottom:1.5pt solid #000}
+    .hdr h1{color:#000; font-size:18pt}
+    .hdr p,.eyebrow{color:#333}
+    .eyebrow{color:#8b6508}
+    .bar,.chips,.resline button,#tray,#toast,.pick,.chev{display:none !important}
+    .resline{padding:8pt 0 0; color:#000}
+    .card{break-inside:avoid; page-break-inside:avoid; border:1px solid #bbb; box-shadow:none; margin-bottom:8pt}
+    .card-bd{display:block !important}
+    .comp{border:1px solid #ddd}
+    .comp[open] summary{border-bottom:1px solid #ddd}
+    .code{background:#fff; border:1px solid #999; color:#000}
+    .pill{border:1px solid #999; background:#fff; color:#000}
+    .sec-h h2{color:#000}
+    footer{color:#333}
+  }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap">
+    <a class="back" href="index.html">← Budapešť 2026</a>
+    <div class="eyebrow">Budapešť 2026 · rodinný výlet</div>
+    <h1>Jídelníček na výběr</h1>
+    <p>YoloFood, <b>pátek 25.</b> a <b>sobota 26. září</b>. Projděte si jídla, vyberte si a pošlete
+       <b>kódy</b> (např. <span class="mono">Yketo1</span> nebo <span class="mono">SF1</span>).
+       <b>Pondělí</b> můžeme objednat v sobotu — co neobjednáte, zajdeme do restaurace nebo do obchodu.
+       Ceny záměrně neuvádíme.</p>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="seg" role="tablist" aria-label="Den">
+      <button type="button" role="tab" id="tab-FRIDAY" data-day="FRIDAY" aria-selected="true">Pátek 25. 9. <span class="cnt"></span></button>
+      <button type="button" role="tab" id="tab-SATURDAY" data-day="SATURDAY" aria-selected="false">Sobota 26. 9. <span class="cnt"></span></button>
+    </div>
+    <label class="search" for="q">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5 21 21"></path>
+      </svg>
+      <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="Hledat jídlo nebo kód…">
+    </label>
+  </div>
+</div>
+
+<div class="chips" id="chips"></div>
+
+<div class="resline">
+  <span id="count"></span>
+  <button type="button" id="expandAll">Rozbalit vše</button>
+</div>
+
+<main id="list" class="wrap"></main>
+
+<footer>
+  <p><b>Zdroj:</b> <span id="src"></span>. Údaje staženy <span id="fetched"></span>.</p>
+  <p><b>Výživové údaje</b> jsou podle provozovatele odhady a slouží jen orientačně; jsou uvedené na jednu porci
+     tak, jak je uvádí web. Složení odpovídá seznamu surovin na webu (bez obalů).</p>
+  <p><b>Sobota</b> má v jídelníčku jen omezenou nabídku — na webu jsou v tuto chvíli dvě položky.</p>
+  <p><b>Alergeny</b> jsou přepsané z webu; u každého jídla je i celé složení, takže se dá dohledat, co komu nesedí.</p>
+</footer>
+
+<div id="tray" hidden>
+  <div class="tray-in">
+    <div class="tray-txt"><b id="trayCount">0</b> <span id="trayWord">vybraných jídel</span>
+      <span class="codes" id="trayCodes"></span></div>
+    <div class="tray-actions">
+      <button type="button" class="btn-primary" id="copyBtn">Kopírovat kódy</button>
+      <button type="button" class="btn-ghost" id="shareBtn" hidden>Sdílet</button>
+      <button type="button" class="btn-ghost" id="clearBtn">Vyprázdnit</button>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = {"days":[{"key":"FRIDAY","label":"Pátek 25. 9."},{"key":"SATURDAY","label":"Sobota 26. 9."}],"groups":["Hlavní jídla","Polévky","Pečivo","Doplňky a dezerty"],"dishes":[{"day":"FRIDAY","code":"Yketo1","group":"Hlavní jídla","line":"Yolo Keto","slot":["Yolo Keto menu","low carb","hlavní jídlo"],"flags":["Keto / low carb"],"portion":"400–500 g","components":[{"name":"Vepřová kotleta s pečenou paprikou a fetou, s krémem z lilku","portion":"400–500 g","slot":["Yolo Keto menu","low carb","hlavní jídlo"],"kcal":539,"protein":38.6,"fat":28.5,"satfat":5.5,"carbs":32.1,"sugar":21.9,"fibre":0,"salt":0.94,"ingredients":["lilek (mražený)","cibule na kostičky (čištěná)","česnek (čištěný)","petrželová nať (mražená)","uzená paprika","feta","olivový olej","majonéza","zakysaná smetana","vepřová kotleta","paprika (kapie)","ajvar (konzerva)"],"allergens":["mléko","hořčice","vejce"]}],"kcal":539,"isPackage":false,"name":"Vepřová kotleta s pečenou paprikou a fetou, s krémem z lilku","ingredients":["ajvar (konzerva)","cibule na kostičky (čištěná)","feta","lilek (mražený)","majonéza","olivový olej","paprika (kapie)","petrželová nať (mražená)","uzená paprika","vepřová kotleta","zakysaná smetana","česnek (čištěný)"],"allergens":["hořčice","mléko","vejce"]},{"day":"FRIDAY","code":"Yketo2","group":"Hlavní jídla","line":"Yolo Keto","slot":["Yolo Keto menu","low carb","hlavní jídlo"],"flags":["Keto / low carb"],"portion":"400–500 g","components":[{"name":"Sezamový kuřecí salát s dresinkem Thousand Islands","portion":"400–500 g","slot":["Yolo Keto menu","low carb","hlavní jídlo"],"kcal":512,"protein":38.1,"fat":31.4,"satfat":7.1,"carbs":19.2,"sugar":7.7,"fibre":0,"salt":2.82,"ingredients":["kuřecí prsa (bez kosti)","sezamová semínka","zakysaná smetana","kečup","cibule na kostičky (čištěná)","česnek (čištěný)","mletý černý pepř","jedlá sůl","nakládané okurky","olivový olej","majonéza","červené zelí","ledový salát","pažitka (mražená)"],"allergens":["hořčice","sezamová semena","mléko","vejce"]}],"kcal":512,"isPackage":false,"name":"Sezamový kuřecí salát s dresinkem Thousand Islands","ingredients":["cibule na kostičky (čištěná)","jedlá sůl","kečup","kuřecí prsa (bez kosti)","ledový salát","majonéza","mletý černý pepř","nakládané okurky","olivový olej","pažitka (mražená)","sezamová semínka","zakysaná smetana","červené zelí","česnek (čištěný)"],"allergens":["hořčice","mléko","sezamová semena","vejce"]},{"day":"FRIDAY","code":"YCE","group":"Hlavní jídla","line":"Yolo Chef","slot":["Oběd (Chef)"],"flags":[],"portion":"450–500 g","components":[{"name":"Filet z mořského okouna pečený s houbami a sýrem, s bramborovými kolečky","portion":"450–500 g","slot":["Oběd (Chef)"],"kcal":656,"protein":34.6,"fat":30.3,"satfat":7.2,"carbs":61.3,"sugar":3.0,"fibre":0,"salt":5.66,"ingredients":["mletý černý pepř","petrželová nať (mražená)","česnek (čištěný)","mořský okoun (mražený)","rostlinný olej","grilovací koření","jedlá sůl","cibule na kostičky (mražená)","sýr eidam","žampiony krájené (mražené)","brambory na kolečka (čištěné)"],"allergens":["ryby","mléko"]}],"kcal":656,"isPackage":false,"name":"Filet z mořského okouna pečený s houbami a sýrem, s bramborovými kolečky","ingredients":["brambory na kolečka (čištěné)","cibule na kostičky (mražená)","grilovací koření","jedlá sůl","mletý černý pepř","mořský okoun (mražený)","petrželová nať (mražená)","rostlinný olej","sýr eidam","česnek (čištěný)","žampiony krájené (mražené)"],"allergens":["mléko","ryby"]},{"day":"FRIDAY","code":"YCV","group":"Hlavní jídla","line":"Yolo Chef","slot":["Večeře (Chef)"],"flags":[],"portion":"450–500 g","components":[{"name":"Kuřecí fajitas s rajčatovou rýží","portion":"450–500 g","slot":["Večeře (Chef)"],"kcal":459,"protein":37.8,"fat":21.6,"satfat":1.8,"carbs":28.5,"sugar":3.4,"fibre":0,"salt":1.05,"ingredients":["mletý černý pepř","bazalka (mražená)","petrželová nať (mražená)","jasmínová rýže","krájená rajčata (konzerva)","rostlinný olej","jedlá sůl","cibule na kostičky (čištěná)","chilli vločky","pažitka (mražená)","citronová šťáva","česnek (čištěný)","mleté oregano","mletý římský kmín","kuřecí prsa (bez kosti)","paprikové proužky (mražené)","koriandr (čerstvý)","červená cibule (čištěná)"],"allergens":[]}],"kcal":459,"isPackage":false,"name":"Kuřecí fajitas s rajčatovou rýží","ingredients":["bazalka (mražená)","chilli vločky","cibule na kostičky (čištěná)","citronová šťáva","jasmínová rýže","jedlá sůl","koriandr (čerstvý)","krájená rajčata (konzerva)","kuřecí prsa (bez kosti)","mleté oregano","mletý černý pepř","mletý římský kmín","paprikové proužky (mražené)","pažitka (mražená)","petrželová nať (mražená)","rostlinný olej","červená cibule (čištěná)","česnek (čištěný)"],"allergens":[]},{"day":"FRIDAY","code":"Y160E","group":"Hlavní jídla","line":"Yolo 160 g","slot":["Oběd","porce podle obsahu živin"],"flags":[],"portion":"250–450 g","components":[{"name":"Plněné zelí s bulgurem a zakysanou smetanou","portion":"250–450 g","slot":["Oběd","porce podle obsahu živin"],"kcal":471,"protein":31.9,"fat":20.1,"satfat":4.6,"carbs":40.6,"sugar":12.0,"fibre":0,"salt":13.55,"ingredients":["cibule na kostičky (čištěná)","jedlá sůl","česnek (čištěný)","bobkový list","mletý kmín","mletý černý pepř","mletá paprika","zakysaná smetana","lečo (mražené)","bulgur","vejce (syrové)","kysané zelí","rostlinný olej","listy kysaného zelí","vepřová plec (mletá)"],"allergens":["lepek","oxid siřičitý a siřičitany","hořčice","mléko","vejce"]}],"kcal":471,"isPackage":false,"name":"Plněné zelí s bulgurem a zakysanou smetanou","ingredients":["bobkový list","bulgur","cibule na kostičky (čištěná)","jedlá sůl","kysané zelí","lečo (mražené)","listy kysaného zelí","mletá paprika","mletý kmín","mletý černý pepř","rostlinný olej","vejce (syrové)","vepřová plec (mletá)","zakysaná smetana","česnek (čištěný)"],"allergens":["hořčice","lepek","mléko","oxid siřičitý a siřičitany","vejce"]},{"day":"FRIDAY","code":"Y160V","group":"Hlavní jídla","line":"Yolo 160 g","slot":["Večeře","porce podle obsahu živin"],"flags":[],"portion":"250–450 g","components":[{"name":"Vepřový řízek s česnekem a mrkvovou basmati rýží","portion":"250–450 g","slot":["Večeře","porce podle obsahu živin"],"kcal":448,"protein":33.3,"fat":14.7,"satfat":1.0,"carbs":45.6,"sugar":0,"fibre":0,"salt":3.06,"ingredients":["mletý koriandr","mletá paprika","vepřová kotleta","mletý černý pepř","basmati rýže","jedlá sůl","rostlinný olej","česnek (čištěný)","petrželová nať (mražená)","mrkev (čištěná)"],"allergens":[]}],"kcal":448,"isPackage":false,"name":"Vepřový řízek s česnekem a mrkvovou basmati rýží","ingredients":["basmati rýže","jedlá sůl","mletá paprika","mletý koriandr","mletý černý pepř","mrkev (čištěná)","petrželová nať (mražená)","rostlinný olej","vepřová kotleta","česnek (čištěný)"],"allergens":[]},{"day":"FRIDAY","code":"YSE","group":"Hlavní jídla","line":"Yolo Sport","slot":["Oběd (Sport)"],"flags":[],"portion":"450–500 g","components":[{"name":"Kuřecí steak s pažitkou, dušenou broskví a divokou rýží","portion":"450–500 g","slot":["Oběd (Sport)"],"kcal":736,"protein":43.5,"fat":22.6,"satfat":1.9,"carbs":89.8,"sugar":5.4,"fibre":0,"salt":0,"ingredients":["drůbeží koření","pažitka (mražená)","divoká rýže","jasmínová rýže","rostlinný olej","broskve (mražené)","kuřecí prsa (bez kosti)"],"allergens":[]}],"kcal":736,"isPackage":false,"name":"Kuřecí steak s pažitkou, dušenou broskví a divokou rýží","ingredients":["broskve (mražené)","divoká rýže","drůbeží koření","jasmínová rýže","kuřecí prsa (bez kosti)","pažitka (mražená)","rostlinný olej"],"allergens":[]},{"day":"FRIDAY","code":"YSV","group":"Hlavní jídla","line":"Yolo Sport","slot":["Večeře (Sport)"],"flags":[],"portion":"450–500 g","components":[{"name":"Kuřecí prsa rolovaná v uzeném sýru, s bazalkou a quinoou s červenými fazolemi","portion":"450–500 g","slot":["Večeře (Sport)"],"kcal":948,"protein":77.0,"fat":26.2,"satfat":7.1,"carbs":101.3,"sugar":4.7,"fibre":0,"salt":1.45,"ingredients":["rostlinný olej","mletý černý pepř","petrželová nať (mražená)","drůbeží koření","bazalka (mražená)","jedlá sůl","kuřecí prsa (bez kosti)","červené fazole (konzerva)","uzený sýr","quinoa"],"allergens":["mléko"]}],"kcal":948,"isPackage":false,"name":"Kuřecí prsa rolovaná v uzeném sýru, s bazalkou a quinoou s červenými fazolemi","ingredients":["bazalka (mražená)","drůbeží koření","jedlá sůl","kuřecí prsa (bez kosti)","mletý černý pepř","petrželová nať (mražená)","quinoa","rostlinný olej","uzený sýr","červené fazole (konzerva)"],"allergens":["mléko"]},{"day":"FRIDAY","code":"SF1","group":"Hlavní jídla","line":"Yolo Slim","slot":["Hlavní chod 1","porce podle obsahu živin","Slim","Řada Slim"],"flags":["Řada Slim"],"portion":"250–450 g","components":[{"name":"Vepřový řízek s česnekem, se zeleninou a brambory z pekáče, s jogurtovým dresinkem","portion":"250–450 g","slot":["Hlavní chod 1","porce podle obsahu živin","Slim","Řada Slim"],"kcal":412,"protein":38.7,"fat":15.9,"satfat":1.3,"carbs":28.6,"sugar":6.1,"fibre":0,"salt":1.05,"ingredients":["rostlinný olej","cuketa krájená (mražená)","vepřová kotleta","mletý černý pepř","jedlá sůl","jogurt","petrželová nať (mražená)","mletá paprika","pažitka (mražená)","mletý koriandr","česnek (čištěný)","steakové koření","brokolice (mražená)","brambory celé (čištěné)"],"allergens":["mléko"]}],"kcal":412,"isPackage":false,"name":"Vepřový řízek s česnekem, se zeleninou a brambory z pekáče, s jogurtovým dresinkem","ingredients":["brambory celé (čištěné)","brokolice (mražená)","cuketa krájená (mražená)","jedlá sůl","jogurt","mletá paprika","mletý koriandr","mletý černý pepř","pažitka (mražená)","petrželová nať (mražená)","rostlinný olej","steakové koření","vepřová kotleta","česnek (čištěný)"],"allergens":["mléko"]},{"day":"FRIDAY","code":"SF2","group":"Hlavní jídla","line":"Yolo Slim","slot":["Hlavní chod 2","porce podle obsahu živin","Slim","Řada Slim"],"flags":["Řada Slim"],"portion":"250–450 g","components":[{"name":"Kuřecí prsa rolovaná v uzeném sýru, s divokou rýží a dušeným červeným zelím","portion":"250–450 g","slot":["Hlavní chod 2","porce podle obsahu živin","Slim","Řada Slim"],"kcal":495,"protein":45.8,"fat":16.0,"satfat":6.2,"carbs":41.9,"sugar":0.1,"fibre":0,"salt":1.45,"ingredients":["rostlinný olej","mletý černý pepř","petrželová nať (mražená)","drůbeží koření","bazalka (mražená)","jedlá sůl","uzený sýr","kuřecí prsa (bez kosti)","jasmínová rýže","červené zelí","divoká rýže","sladidlo","mletý kmín","cibule na kostičky (čištěná)","ocet"],"allergens":["mléko"]}],"kcal":495,"isPackage":false,"name":"Kuřecí prsa rolovaná v uzeném sýru, s divokou rýží a dušeným červeným zelím","ingredients":["bazalka (mražená)","cibule na kostičky (čištěná)","divoká rýže","drůbeží koření","jasmínová rýže","jedlá sůl","kuřecí prsa (bez kosti)","mletý kmín","mletý černý pepř","ocet","petrželová nať (mražená)","rostlinný olej","sladidlo","uzený sýr","červené zelí"],"allergens":["mléko"]},{"day":"FRIDAY","code":"YV","group":"Hlavní jídla","line":"Yolo Vega","slot":["Vega"],"flags":["Vegetariánské"],"portion":"450–500 g","components":[{"name":"Tortellini plněné sýrem, s brokolicí a omáčkou z modrého sýra","portion":"450–500 g","slot":["Vega"],"kcal":765,"protein":31.3,"fat":27.3,"satfat":15.2,"carbs":98.5,"sugar":8.4,"fibre":0,"salt":6.23,"ingredients":["tortellini plněné sýrem","brokolice (mražená)","smetana","cibule na kostičky (mražená)","česnek (čištěný)","pažitka (mražená)","mletý černý pepř","petrželová nať (mražená)","pšeničná mouka hladká","jedlá sůl","mramorový sýr"],"allergens":["mléko","lepek","vejce"]}],"kcal":765,"isPackage":false,"name":"Tortellini plněné sýrem, s brokolicí a omáčkou z modrého sýra","ingredients":["brokolice (mražená)","cibule na kostičky (mražená)","jedlá sůl","mletý černý pepř","mramorový sýr","pažitka (mražená)","petrželová nať (mražená)","pšeničná mouka hladká","smetana","tortellini plněné sýrem","česnek (čištěný)"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YTM","group":"Hlavní jídla","line":"Yolo Tejmentes","slot":["Tejmentes"],"flags":["Bez mléka"],"portion":"450–500 g","components":[{"name":"Maso s rýží a perlovými cibulkami","portion":"450–500 g","slot":["Tejmentes"],"kcal":570,"protein":30.3,"fat":18.5,"satfat":0.9,"carbs":70.5,"sugar":4.1,"fibre":0,"salt":1.0,"ingredients":["jasmínová rýže","cibule na kostičky (čištěná)","jedlá sůl","rostlinný olej","vepřová plec na kostičky","mletý černý pepř","mletý kmín","česnek (čištěný)","mletá paprika","perlové cibulky (konzerva)","lečo (mražené)","pšeničná mouka hladká"],"allergens":["lepek"]}],"kcal":570,"isPackage":false,"name":"Maso s rýží a perlovými cibulkami","ingredients":["cibule na kostičky (čištěná)","jasmínová rýže","jedlá sůl","lečo (mražené)","mletá paprika","mletý kmín","mletý černý pepř","perlové cibulky (konzerva)","pšeničná mouka hladká","rostlinný olej","vepřová plec na kostičky","česnek (čištěný)"],"allergens":["lepek"]},{"day":"FRIDAY","code":"YAS","group":"Hlavní jídla","line":"Yolo Asia","slot":["Asia"],"flags":[],"portion":"450–500 g","components":[{"name":"Kuřecí prsa v tempuře, se sladkou chilli omáčkou a zeleninovou rýží","portion":"450–500 g","slot":["Asia"],"kcal":379,"protein":35.1,"fat":12.2,"satfat":0.9,"carbs":32.2,"sugar":11.5,"fibre":0,"salt":3.27,"ingredients":["tempura","kečup","cuketa krájená (mražená)","paprikové proužky (mražené)","jasmínová rýže","rostlinný olej","jedlá sůl","plátky ananasu (konzerva)","sladká chilli omáčka","kuřecí prsa (bez kosti)","červená cibule (čištěná)"],"allergens":["lepek"]}],"kcal":379,"isPackage":false,"name":"Kuřecí prsa v tempuře, se sladkou chilli omáčkou a zeleninovou rýží","ingredients":["cuketa krájená (mražená)","jasmínová rýže","jedlá sůl","kečup","kuřecí prsa (bez kosti)","paprikové proužky (mražené)","plátky ananasu (konzerva)","rostlinný olej","sladká chilli omáčka","tempura","červená cibule (čištěná)"],"allergens":["lepek"]},{"day":"FRIDAY","code":"YM1","group":"Hlavní jídla","line":"Yolo Menza","slot":["Hlavní chod 1","Menza"],"flags":[],"portion":"450–500 g","components":[{"name":"Kuřecí prsa po cypursku, s rýží a hráškem","portion":"450–500 g","slot":["Hlavní chod 1","Menza"],"kcal":730,"protein":44.6,"fat":23.8,"satfat":3.8,"carbs":84.3,"sugar":4.0,"fibre":1.9,"salt":2.36,"ingredients":["drůbeží koření","jedlá sůl","mletý černý pepř","česnek (mražený)","citronová šťáva","bazalka (mražená)","petrželová nať (mražená)","feta","rostlinný olej","kuřecí prsa (bez kosti)","hrášek (mražený)","jasmínová rýže","sušená rajčata (konzerva)","sušená rajčata (proužky, sušená)"],"allergens":["mléko"]}],"kcal":730,"isPackage":false,"name":"Kuřecí prsa po cypursku, s rýží a hráškem","ingredients":["bazalka (mražená)","citronová šťáva","drůbeží koření","feta","hrášek (mražený)","jasmínová rýže","jedlá sůl","kuřecí prsa (bez kosti)","mletý černý pepř","petrželová nať (mražená)","rostlinný olej","sušená rajčata (konzerva)","sušená rajčata (proužky, sušená)","česnek (mražený)"],"allergens":["mléko"]},{"day":"SATURDAY","code":"YM1","group":"Hlavní jídla","line":"Yolo Menza","slot":["Hlavní chod 1","Menza"],"flags":[],"portion":"450–500 g","components":[{"name":"Smetanové kuřecí stripsy s bazalkou a těstovinami (mušlemi)","portion":"450–500 g","slot":["Hlavní chod 1","Menza"],"kcal":507,"protein":39.6,"fat":10.2,"satfat":3.7,"carbs":64.2,"sugar":4.8,"fibre":0,"salt":1.06,"ingredients":["těstoviny mušle (fodros kagyló)","mrkev na kolečka (mražená)","brokolice (mražená)","cibule na kostičky (čištěná)","smetana","jedlá sůl","česnek (čištěný)","mletý černý pepř","bazalka (mražená)","rostlinný olej","kuřecí prsa (bez kosti)","pšeničná mouka hladká"],"allergens":["lepek","mléko"]}],"kcal":507,"isPackage":false,"name":"Smetanové kuřecí stripsy s bazalkou a těstovinami (mušlemi)","ingredients":["bazalka (mražená)","brokolice (mražená)","cibule na kostičky (čištěná)","jedlá sůl","kuřecí prsa (bez kosti)","mletý černý pepř","mrkev na kolečka (mražená)","pšeničná mouka hladká","rostlinný olej","smetana","těstoviny mušle (fodros kagyló)","česnek (čištěný)"],"allergens":["lepek","mléko"]},{"day":"FRIDAY","code":"YM2","group":"Hlavní jídla","line":"Yolo Menza","slot":["Hlavní chod 2","Menza"],"flags":[],"portion":"450–500 g","components":[{"name":"Pepřový tokáň s tarhoňou","portion":"450–500 g","slot":["Hlavní chod 2","Menza"],"kcal":574,"protein":35.8,"fat":20.7,"satfat":6.1,"carbs":60.9,"sugar":4.3,"fibre":0,"salt":1.48,"ingredients":["tarhoňa (domácí)","mletý černý pepř","uzená slanina na kostičky","cibule na kostičky (čištěná)","pšeničná mouka hladká","jedlá sůl","mletý kmín","rajčatový protlak (konzerva)","česnek (čištěný)","vepřová kýta"],"allergens":["lepek","vejce"]}],"kcal":574,"isPackage":false,"name":"Pepřový tokáň s tarhoňou","ingredients":["cibule na kostičky (čištěná)","jedlá sůl","mletý kmín","mletý černý pepř","pšeničná mouka hladká","rajčatový protlak (konzerva)","tarhoňa (domácí)","uzená slanina na kostičky","vepřová kýta","česnek (čištěný)"],"allergens":["lepek","vejce"]},{"day":"FRIDAY","code":"YMD","group":"Hlavní jídla","line":"Yolo Menza","slot":["Dezert","Menza"],"flags":[],"portion":"100–200 g","components":[{"name":"Esterházyho řez","portion":"100–200 g","slot":["Dezert","Menza"],"kcal":414,"protein":7.3,"fat":24.9,"satfat":9,"carbs":40,"sugar":22.5,"fibre":0,"salt":0,"ingredients":["Esterházyho řez (hotový výrobek)","krystalový cukr","vejce (syrové)","rumové aroma","mleté vlašské ořechy","pšeničná mouka hladká","prášek do pečiva","margarín","vařicí vanilkový puding","mletá skořice","hořká čokoláda (pastilky)"],"allergens":["mléko","vlašské ořechy","lepek","olejnatá semena","vejce"]}],"kcal":414,"isPackage":false,"name":"Esterházyho řez","ingredients":["Esterházyho řez (hotový výrobek)","hořká čokoláda (pastilky)","krystalový cukr","margarín","mletá skořice","mleté vlašské ořechy","prášek do pečiva","pšeničná mouka hladká","rumové aroma","vařicí vanilkový puding","vejce (syrové)"],"allergens":["lepek","mléko","olejnatá semena","vejce","vlašské ořechy"]},{"day":"FRIDAY","code":"YMF","group":"Hlavní jídla","line":"Yolo Menza","slot":["Zeleninová kaše","Menza"],"flags":[],"portion":"450–500 g","components":[{"name":"Krémová kaše ze žlutého hrachu s kuřecími nugetami","portion":"450–500 g","slot":["Zeleninová kaše","Menza"],"kcal":548,"protein":28.1,"fat":18.7,"satfat":2.4,"carbs":66.8,"sugar":5.9,"fibre":0,"salt":2.18,"ingredients":["mletý černý pepř","mletá paprika","žlutý hrách","česnek (mražený)","jedlá sůl","rostlinný olej","pšeničná mouka hladká","bobkový list","kuřecí nugety (mražené)"],"allergens":["lepek","sója"]}],"kcal":548,"isPackage":false,"name":"Krémová kaše ze žlutého hrachu s kuřecími nugetami","ingredients":["bobkový list","jedlá sůl","kuřecí nugety (mražené)","mletá paprika","mletý černý pepř","pšeničná mouka hladká","rostlinný olej","česnek (mražený)","žlutý hrách"],"allergens":["lepek","sója"]},{"day":"FRIDAY","code":"YR1","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["normální porce","Smažené"],"flags":[],"portion":"450–500 g","components":[{"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s brambory na kolečka","portion":"450–500 g","slot":["normální porce","Smažené"],"kcal":1143,"protein":52.4,"fat":54.7,"satfat":9.1,"carbs":110.4,"sugar":5.2,"fibre":0,"salt":3.42,"ingredients":["kuřecí stehenní řízek (bez kosti)","rozšlehaná vejce","jedlá sůl","pšeničná mouka hladká","slunečnicový olej","strouhanka","ovčí hrudka (bryndza)","tvaroh","česnek (čištěný)","brambory na kolečka (čištěné)","petrželová nať (čerstvá)","drůbeží koření"],"allergens":["mléko","lepek","vejce"]}],"kcal":1143,"isPackage":false,"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s brambory na kolečka","ingredients":["brambory na kolečka (čištěné)","drůbeží koření","jedlá sůl","kuřecí stehenní řízek (bez kosti)","ovčí hrudka (bryndza)","petrželová nať (čerstvá)","pšeničná mouka hladká","rozšlehaná vejce","slunečnicový olej","strouhanka","tvaroh","česnek (čištěný)"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YR1K","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["malá porce","Smažené"],"flags":[],"portion":"300–350 g","components":[{"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s brambory na kolečka","portion":"300–350 g","slot":["malá porce","Smažené"],"kcal":881,"protein":37.1,"fat":42.6,"satfat":7.1,"carbs":87.2,"sugar":3.9,"fibre":0,"salt":3.31,"ingredients":["kuřecí stehenní řízek (bez kosti)","rozšlehaná vejce","jedlá sůl","pšeničná mouka hladká","slunečnicový olej","strouhanka","ovčí hrudka (bryndza)","tvaroh","česnek (čištěný)","brambory na kolečka (čištěné)","petrželová nať (čerstvá)","drůbeží koření"],"allergens":["mléko","lepek","vejce"]}],"kcal":881,"isPackage":false,"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s brambory na kolečka","ingredients":["brambory na kolečka (čištěné)","drůbeží koření","jedlá sůl","kuřecí stehenní řízek (bez kosti)","ovčí hrudka (bryndza)","petrželová nať (čerstvá)","pšeničná mouka hladká","rozšlehaná vejce","slunečnicový olej","strouhanka","tvaroh","česnek (čištěný)"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YR2","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["normální porce","Smažené"],"flags":[],"portion":"450–500 g","components":[{"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s kukuřičnou jasmínovou rýží","portion":"450–500 g","slot":["normální porce","Smažené"],"kcal":1163,"protein":50.3,"fat":64.9,"satfat":10.1,"carbs":94.3,"sugar":6.7,"fibre":0,"salt":3.52,"ingredients":["petrželová nať (čerstvá)","slunečnicový olej","ovčí hrudka (bryndza)","mletý bílý pepř","jedlá sůl","kuřecí stehenní řízek (bez kosti)","rozšlehaná vejce","pšeničná mouka hladká","strouhanka","tvaroh","česnek (čištěný)","kukuřice (mražená)","jasmínová rýže","drůbeží koření"],"allergens":["mléko","lepek","vejce"]}],"kcal":1163,"isPackage":false,"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s kukuřičnou jasmínovou rýží","ingredients":["drůbeží koření","jasmínová rýže","jedlá sůl","kukuřice (mražená)","kuřecí stehenní řízek (bez kosti)","mletý bílý pepř","ovčí hrudka (bryndza)","petrželová nať (čerstvá)","pšeničná mouka hladká","rozšlehaná vejce","slunečnicový olej","strouhanka","tvaroh","česnek (čištěný)"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YR2K","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["malá porce","Smažené"],"flags":[],"portion":"300–350 g","components":[{"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s kukuřičnou jasmínovou rýží","portion":"300–350 g","slot":["malá porce","Smažené"],"kcal":904,"protein":35.7,"fat":50.8,"satfat":7.9,"carbs":75.9,"sugar":5.3,"fibre":0,"salt":3.39,"ingredients":["petrželová nať (čerstvá)","slunečnicový olej","ovčí hrudka (bryndza)","mletý bílý pepř","jedlá sůl","kuřecí stehenní řízek (bez kosti)","rozšlehaná vejce","pšeničná mouka hladká","strouhanka","tvaroh","česnek (čištěný)","kukuřice (mražená)","jasmínová rýže","drůbeží koření"],"allergens":["mléko","lepek","vejce"]}],"kcal":904,"isPackage":false,"name":"Kuřecí stehenní řízek plněný ovčí hrudkou, s kukuřičnou jasmínovou rýží","ingredients":["drůbeží koření","jasmínová rýže","jedlá sůl","kukuřice (mražená)","kuřecí stehenní řízek (bez kosti)","mletý bílý pepř","ovčí hrudka (bryndza)","petrželová nať (čerstvá)","pšeničná mouka hladká","rozšlehaná vejce","slunečnicový olej","strouhanka","tvaroh","česnek (čištěný)"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YR3","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["normální porce","Smažené"],"flags":[],"portion":"450–500 g","components":[{"name":"Vepřový řízek v ořechovém trojobalu, s bramborovou kaší a kořeněným dresinkem","portion":"450–500 g","slot":["normální porce","Smažené"],"kcal":1427,"protein":55.5,"fat":85.9,"satfat":16.0,"carbs":107.9,"sugar":11.4,"fibre":0,"salt":5.9,"ingredients":["pšeničná mouka hladká","slunečnicový olej","vepřová kotleta","rozšlehaná vejce","jedlá sůl","strouhanka","mleté vlašské ořechy","brambory na kostičky (čištěné)","mléko","margarín","mletý bílý pepř","uzená mletá paprika","jogurt","citronová šťáva","mletá kurkuma","česnek (čištěný)"],"allergens":["mléko","vlašské ořechy","lepek","olejnatá semena","vejce"]}],"kcal":1427,"isPackage":false,"name":"Vepřový řízek v ořechovém trojobalu, s bramborovou kaší a kořeněným dresinkem","ingredients":["brambory na kostičky (čištěné)","citronová šťáva","jedlá sůl","jogurt","margarín","mletá kurkuma","mleté vlašské ořechy","mletý bílý pepř","mléko","pšeničná mouka hladká","rozšlehaná vejce","slunečnicový olej","strouhanka","uzená mletá paprika","vepřová kotleta","česnek (čištěný)"],"allergens":["lepek","mléko","olejnatá semena","vejce","vlašské ořechy"]},{"day":"FRIDAY","code":"YR3K","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["malá porce","Smažené"],"flags":[],"portion":"300–350 g","components":[{"name":"Vepřový řízek v ořechovém trojobalu, s bramborovou kaší a kořeněným dresinkem","portion":"300–350 g","slot":["malá porce","Smažené"],"kcal":1187,"protein":41.7,"fat":73.6,"satfat":13.0,"carbs":89.4,"sugar":9.8,"fibre":0,"salt":5.16,"ingredients":["pšeničná mouka hladká","slunečnicový olej","vepřová kotleta","rozšlehaná vejce","jedlá sůl","strouhanka","mleté vlašské ořechy","brambory na kostičky (čištěné)","mléko","margarín","mletý bílý pepř","uzená mletá paprika","jogurt","citronová šťáva","mletá kurkuma","česnek (čištěný)"],"allergens":["mléko","vlašské ořechy","lepek","olejnatá semena","vejce"]}],"kcal":1187,"isPackage":false,"name":"Vepřový řízek v ořechovém trojobalu, s bramborovou kaší a kořeněným dresinkem","ingredients":["brambory na kostičky (čištěné)","citronová šťáva","jedlá sůl","jogurt","margarín","mletá kurkuma","mleté vlašské ořechy","mletý bílý pepř","mléko","pšeničná mouka hladká","rozšlehaná vejce","slunečnicový olej","strouhanka","uzená mletá paprika","vepřová kotleta","česnek (čištěný)"],"allergens":["lepek","mléko","olejnatá semena","vejce","vlašské ořechy"]},{"day":"FRIDAY","code":"YR4","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["normální porce","Smažené"],"flags":[],"portion":"450–500 g","components":[{"name":"Vepřový řízek v ořechovém trojobalu, s jasmínovou rýží a kořeněným dresinkem","portion":"450–500 g","slot":["normální porce","Smažené"],"kcal":817,"protein":44.1,"fat":42.0,"satfat":6.2,"carbs":65.7,"sugar":3.6,"fibre":0,"salt":1.07,"ingredients":["mletý černý pepř","jedlá sůl","petrželová nať (mražená)","mletá paprika","pažitka (mražená)","česnek (čištěný)","steakové koření","jogurt","jasmínová rýže","vlašské ořechy (jádra)","rostlinný olej","zakysaná smetana","pšeničná mouka hladká","strouhanka","rozšlehaná vejce","vepřová kotleta"],"allergens":["mléko","skořápkové plody","lepek","vejce"]}],"kcal":817,"isPackage":false,"name":"Vepřový řízek v ořechovém trojobalu, s jasmínovou rýží a kořeněným dresinkem","ingredients":["jasmínová rýže","jedlá sůl","jogurt","mletá paprika","mletý černý pepř","pažitka (mražená)","petrželová nať (mražená)","pšeničná mouka hladká","rostlinný olej","rozšlehaná vejce","steakové koření","strouhanka","vepřová kotleta","vlašské ořechy (jádra)","zakysaná smetana","česnek (čištěný)"],"allergens":["lepek","mléko","skořápkové plody","vejce"]},{"day":"FRIDAY","code":"YR4K","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["malá porce","Smažené"],"flags":[],"portion":"300–350 g","components":[{"name":"Vepřový řízek v ořechovém trojobalu, s jasmínovou rýží a kořeněným dresinkem","portion":"300–350 g","slot":["malá porce","Smažené"],"kcal":579,"protein":31.9,"fat":29.7,"satfat":4.4,"carbs":46.0,"sugar":2.5,"fibre":0,"salt":0.75,"ingredients":["mletý černý pepř","jedlá sůl","petrželová nať (mražená)","mletá paprika","pažitka (mražená)","česnek (čištěný)","steakové koření","jogurt","jasmínová rýže","vlašské ořechy (jádra)","rostlinný olej","zakysaná smetana","pšeničná mouka hladká","strouhanka","rozšlehaná vejce","vepřová kotleta"],"allergens":["mléko","skořápkové plody","lepek","vejce"]}],"kcal":579,"isPackage":false,"name":"Vepřový řízek v ořechovém trojobalu, s jasmínovou rýží a kořeněným dresinkem","ingredients":["jasmínová rýže","jedlá sůl","jogurt","mletá paprika","mletý černý pepř","pažitka (mražená)","petrželová nať (mražená)","pšeničná mouka hladká","rostlinný olej","rozšlehaná vejce","steakové koření","strouhanka","vepřová kotleta","vlašské ořechy (jádra)","zakysaná smetana","česnek (čištěný)"],"allergens":["lepek","mléko","skořápkové plody","vejce"]},{"day":"FRIDAY","code":"YRV","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["normální porce","Smažené — vegetariánské","Smažené"],"flags":["Vegetariánské"],"portion":"450–500 g","components":[{"name":"Smažený camembert, s bramborovou kaší a brusinkovou omáčkou","portion":"450–500 g","slot":["normální porce","Smažené — vegetariánské","Smažené"],"kcal":1479,"protein":50.0,"fat":83.9,"satfat":35.0,"carbs":130.8,"sugar":18.2,"fibre":0,"salt":6.85,"ingredients":["sýr camembert","slunečnicový olej","rozšlehaná vejce","jedlá sůl","pšeničná mouka hladká","strouhanka","brambory na kostičky (čištěné)","mléko","margarín","mletý bílý pepř","kukuřičný škrob","cibule na kostičky (mražená)","rozmarýn (čerstvý)","borůvky (mražené)","krystalový cukr","bílé víno"],"allergens":["mléko","lepek","vejce"]}],"kcal":1479,"isPackage":false,"name":"Smažený camembert, s bramborovou kaší a brusinkovou omáčkou","ingredients":["borůvky (mražené)","brambory na kostičky (čištěné)","bílé víno","cibule na kostičky (mražená)","jedlá sůl","krystalový cukr","kukuřičný škrob","margarín","mletý bílý pepř","mléko","pšeničná mouka hladká","rozmarýn (čerstvý)","rozšlehaná vejce","slunečnicový olej","strouhanka","sýr camembert"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YRVK","group":"Hlavní jídla","line":"Yolo Rántott — smažené","slot":["malá porce","Smažené — vegetariánské","Smažené"],"flags":["Vegetariánské"],"portion":"300–350 g","components":[{"name":"Smažený camembert, s bramborovou kaší a brusinkovou omáčkou","portion":"300–350 g","slot":["malá porce","Smažené — vegetariánské","Smažené"],"kcal":1137,"protein":37.3,"fat":64.1,"satfat":25.6,"carbs":102.8,"sugar":16.1,"fibre":0,"salt":5.68,"ingredients":["sýr camembert","slunečnicový olej","rozšlehaná vejce","jedlá sůl","pšeničná mouka hladká","strouhanka","brambory na kostičky (čištěné)","mléko","margarín","mletý bílý pepř","kukuřičný škrob","cibule na kostičky (mražená)","rozmarýn (čerstvý)","borůvky (mražené)","krystalový cukr","bílé víno"],"allergens":["mléko","lepek","vejce"]}],"kcal":1137,"isPackage":false,"name":"Smažený camembert, s bramborovou kaší a brusinkovou omáčkou","ingredients":["borůvky (mražené)","brambory na kostičky (čištěné)","bílé víno","cibule na kostičky (mražená)","jedlá sůl","krystalový cukr","kukuřičný škrob","margarín","mletý bílý pepř","mléko","pšeničná mouka hladká","rozmarýn (čerstvý)","rozšlehaná vejce","slunečnicový olej","strouhanka","sýr camembert"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YL","group":"Polévky","line":"Polévky","slot":["Polévka dne"],"flags":[],"portion":"500 ml","components":[{"name":"Francouzská vaječná polévka","portion":"500 ml","slot":["Polévka dne"],"kcal":181,"protein":6.1,"fat":13.8,"satfat":6.3,"carbs":8.2,"sugar":2.2,"fibre":0,"salt":3.79,"ingredients":["mrkev na kostičky (mražená)","smetana","hořčice","vejce (vařené, loupané)","cibule na kostičky (čištěná)","citronová šťáva","pšeničná mouka hladká","máslo","jedlá sůl","mletý černý pepř"],"allergens":["lepek","hořčice","mléko","vejce"]}],"kcal":181,"isPackage":false,"name":"Francouzská vaječná polévka","ingredients":["cibule na kostičky (čištěná)","citronová šťáva","hořčice","jedlá sůl","mletý černý pepř","mrkev na kostičky (mražená)","máslo","pšeničná mouka hladká","smetana","vejce (vařené, loupané)"],"allergens":["hořčice","lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YLGY","group":"Polévky","line":"Polévky","slot":["Ovocná polévka"],"flags":[],"portion":"500 ml","components":[{"name":"Jablečná polévka se zázvorem","portion":"500 ml","slot":["Ovocná polévka"],"kcal":168,"protein":1.7,"fat":8.1,"satfat":4.4,"carbs":22.1,"sugar":6.7,"fibre":0,"salt":0.05,"ingredients":["mletý hřebíček","vařicí vanilkový puding","mletá skořice","zázvor (mražený)","krystalový cukr","jablka na kostičky (mražená)","smetana"],"allergens":["mléko"]}],"kcal":168,"isPackage":false,"name":"Jablečná polévka se zázvorem","ingredients":["jablka na kostičky (mražená)","krystalový cukr","mletá skořice","mletý hřebíček","smetana","vařicí vanilkový puding","zázvor (mražený)"],"allergens":["mléko"]},{"day":"FRIDAY","code":"YLM","group":"Polévky","line":"Polévky","slot":["Polévka (Menza)","Menza"],"flags":[],"portion":"500 ml","components":[{"name":"Gulášová polévka","portion":"500 ml","slot":["Polévka (Menza)","Menza"],"kcal":275,"protein":18.4,"fat":15.2,"satfat":0.9,"carbs":16.2,"sugar":0.9,"fibre":0,"salt":1.02,"ingredients":["mletá paprika","petrželová nať (mražená)","cibule na kostičky (čištěná)","petržel kořen na kostičky (mražená)","celer na kostičky (mražený)","jedlá sůl","rostlinný olej","lečo (mražené)","mrkev na kolečka (mražená)","mletý černý pepř","vepřová plec na kostičky","brambory na kostičky (čištěné)","tarhoňa (strojová)"],"allergens":["lepek","vejce","celer"]}],"kcal":275,"isPackage":false,"name":"Gulášová polévka","ingredients":["brambory na kostičky (čištěné)","celer na kostičky (mražený)","cibule na kostičky (čištěná)","jedlá sůl","lečo (mražené)","mletá paprika","mletý černý pepř","mrkev na kolečka (mražená)","petržel kořen na kostičky (mražená)","petrželová nať (mražená)","rostlinný olej","tarhoňa (strojová)","vepřová plec na kostičky"],"allergens":["celer","lepek","vejce"]},{"day":"SATURDAY","code":"YLM","group":"Polévky","line":"Polévky","slot":["Polévka (Menza)","Menza"],"flags":[],"portion":"500 ml","components":[{"name":"Pórková polévka s opraženými kostičkami chleba","portion":"500 ml","slot":["Polévka (Menza)","Menza"],"kcal":194,"protein":4.3,"fat":13.3,"satfat":5.9,"carbs":14.2,"sugar":5.1,"fibre":0,"salt":1.07,"ingredients":["cibule na kostičky (čištěná)","mletý černý pepř","smetana","rostlinný olej","česnek (mražený)","pšeničná mouka hladká","jedlá sůl","pórek (mražený)","opražené kostičky housky"],"allergens":["lepek","mléko"]}],"kcal":194,"isPackage":false,"name":"Pórková polévka s opraženými kostičkami chleba","ingredients":["cibule na kostičky (čištěná)","jedlá sůl","mletý černý pepř","opražené kostičky housky","pórek (mražený)","pšeničná mouka hladká","rostlinný olej","smetana","česnek (mražený)"],"allergens":["lepek","mléko"]},{"day":"FRIDAY","code":"YLB","group":"Pečivo","line":"Pečivo Lipóti","slot":["Lipóti"],"flags":[],"portion":"105 g","components":[{"name":"Bageta Lipóti","portion":"105 g","slot":["Lipóti"],"kcal":290,"protein":9,"fat":6,"satfat":2.2,"carbs":50,"sugar":2.5,"fibre":0,"salt":2,"ingredients":["pšeničná mouka hladká","jedlá sůl","bageta Lipóti","krystalový cukr","sušené odtučněné mléko","droždí","slunečnicový olej"],"allergens":["mléko","lepek"]}],"kcal":290,"isPackage":false,"name":"Bageta Lipóti","ingredients":["bageta Lipóti","droždí","jedlá sůl","krystalový cukr","pšeničná mouka hladká","slunečnicový olej","sušené odtučněné mléko"],"allergens":["lepek","mléko"]},{"day":"FRIDAY","code":"YLBB","group":"Pečivo","line":"Pečivo Lipóti","slot":["Lipóti"],"flags":[],"portion":"100 g","components":[{"name":"Bavorská bageta Lipóti","portion":"100 g","slot":["Lipóti"],"kcal":298,"protein":9.3,"fat":6.3,"satfat":2.3,"carbs":51,"sugar":2.6,"fibre":0,"salt":3.9,"ingredients":["krystalový cukr","droždí","pšeničná mouka hladká","jedlá sůl","vejce (syrové)","bavorská bageta Lipóti","sušené odtučněné mléko"],"allergens":["lepek","mléko","vejce"]}],"kcal":298,"isPackage":false,"name":"Bavorská bageta Lipóti","ingredients":["bavorská bageta Lipóti","droždí","jedlá sůl","krystalový cukr","pšeničná mouka hladká","sušené odtučněné mléko","vejce (syrové)"],"allergens":["lepek","mléko","vejce"]},{"day":"FRIDAY","code":"YLFC","group":"Pečivo","line":"Pečivo Lipóti","slot":["Lipóti"],"flags":[],"portion":"90 g","components":[{"name":"Bílá ciabatta Lipóti","portion":"90 g","slot":["Lipóti"],"kcal":389,"protein":11.5,"fat":2.5,"satfat":0,"carbs":79.9,"sugar":0,"fibre":0,"salt":0,"ingredients":["margarín","pšeničná mouka hladká","jedlá sůl","droždí","bílá ciabatta Lipóti"],"allergens":["mléko","lepek"]}],"kcal":389,"isPackage":false,"name":"Bílá ciabatta Lipóti","ingredients":["bílá ciabatta Lipóti","droždí","jedlá sůl","margarín","pšeničná mouka hladká"],"allergens":["lepek","mléko"]},{"day":"FRIDAY","code":"YLMC","group":"Pečivo","line":"Pečivo Lipóti","slot":["Lipóti"],"flags":[],"portion":"90 g","components":[{"name":"Ciabatta se semínky Lipóti","portion":"90 g","slot":["Lipóti"],"kcal":411,"protein":17,"fat":8.8,"satfat":1.2,"carbs":66,"sugar":3,"fibre":0,"salt":1.9,"ingredients":["ciabatta se semínky Lipóti","pšeničná mouka hladká","jedlá sůl","margarín"],"allergens":["mléko","lepek"]}],"kcal":411,"isPackage":false,"name":"Ciabatta se semínky Lipóti","ingredients":["ciabatta se semínky Lipóti","jedlá sůl","margarín","pšeničná mouka hladká"],"allergens":["lepek","mléko"]},{"day":"FRIDAY","code":"YLMP","group":"Pečivo","line":"Pečivo Lipóti","slot":["Lipóti"],"flags":[],"portion":"100 g","components":[{"name":"Preclík se semínky Lipóti","portion":"100 g","slot":["Lipóti"],"kcal":357,"protein":11,"fat":13,"satfat":2.8,"carbs":49,"sugar":8.4,"fibre":0,"salt":1.4,"ingredients":["pšeničná mouka hladká","jedlá sůl","vejce (syrové)","preclík se semínky Lipóti"],"allergens":["lepek","vejce"]}],"kcal":357,"isPackage":false,"name":"Preclík se semínky Lipóti","ingredients":["jedlá sůl","preclík se semínky Lipóti","pšeničná mouka hladká","vejce (syrové)"],"allergens":["lepek","vejce"]},{"day":"FRIDAY","code":"YLSP","group":"Pečivo","line":"Pečivo Lipóti","slot":["Lipóti"],"flags":[],"portion":"100 g","components":[{"name":"Sýrový preclík Lipóti","portion":"100 g","slot":["Lipóti"],"kcal":325,"protein":13,"fat":9,"satfat":5.3,"carbs":48,"sugar":8.5,"fibre":0,"salt":1.7,"ingredients":["jedlá sůl","pšeničná mouka hladká","margarín","sýr trappista","zakysaná smetana","sýrový preclík Lipóti"],"allergens":["mléko","lepek"]}],"kcal":325,"isPackage":false,"name":"Sýrový preclík Lipóti","ingredients":["jedlá sůl","margarín","pšeničná mouka hladká","sýr trappista","sýrový preclík Lipóti","zakysaná smetana"],"allergens":["lepek","mléko"]},{"day":"FRIDAY","code":"YT","group":"Doplňky a dezerty","line":"Doplňková jídla","slot":["Přesnídávka"],"flags":[],"portion":"100–150 g","components":[{"name":"Kokosový fit dezert „somlói galuska“ (piškotový pohár)","portion":"100–150 g","slot":["Přesnídávka"],"kcal":361,"protein":8.9,"fat":14.7,"satfat":9.1,"carbs":48.1,"sugar":1.3,"fibre":0,"salt":0.03,"ingredients":["celozrnná pšeničná mouka","vejce (syrové)","strouhaný kokos","kakaový prášek","sladidlo","prášek do pečiva","kokosová smetana","vařicí vanilkový puding bez cukru"],"allergens":["skořápkové plody","lepek","oxid siřičitý a siřičitany","vejce"]}],"kcal":361,"isPackage":false,"name":"Kokosový fit dezert „somlói galuska“ (piškotový pohár)","ingredients":["celozrnná pšeničná mouka","kakaový prášek","kokosová smetana","prášek do pečiva","sladidlo","strouhaný kokos","vařicí vanilkový puding bez cukru","vejce (syrové)"],"allergens":["lepek","oxid siřičitý a siřičitany","skořápkové plody","vejce"]},{"day":"FRIDAY","code":"YU","group":"Doplňky a dezerty","line":"Doplňková jídla","slot":["Svačina"],"flags":[],"portion":"100–150 g","components":[{"name":"Řecký salát","portion":"100–150 g","slot":["Svačina"],"kcal":63,"protein":1.6,"fat":3.1,"satfat":0.8,"carbs":7.1,"sugar":0.8,"fibre":0,"salt":1.22,"ingredients":["mletý černý pepř","mleté oregano","mletý rozmarýn","feta","jedlá sůl","olivový olej","černé olivy (konzerva)","hadovka obecná (salátová okurka)","rajčata (čerstvá)","červená cibule (čištěná)"],"allergens":["mléko"]}],"kcal":63,"isPackage":false,"name":"Řecký salát","ingredients":["feta","hadovka obecná (salátová okurka)","jedlá sůl","mleté oregano","mletý rozmarýn","mletý černý pepř","olivový olej","rajčata (čerstvá)","černé olivy (konzerva)","červená cibule (čištěná)"],"allergens":["mléko"]},{"day":"FRIDAY","code":"YS","group":"Doplňky a dezerty","line":"Nakládaná zelenina","slot":["Nakládaná zelenina"],"flags":[],"portion":"100 g","components":[{"name":"Nakládané okurky","portion":"100 g","slot":["Nakládaná zelenina"],"kcal":31,"protein":2.2,"fat":0.2,"satfat":0,"carbs":5.2,"sugar":5.2,"fibre":0,"salt":2,"ingredients":["nakládané okurky"],"allergens":["hořčice"]}],"kcal":31,"isPackage":false,"name":"Nakládané okurky","ingredients":["nakládané okurky"],"allergens":["hořčice"]},{"day":"FRIDAY","code":"YD1","group":"Doplňky a dezerty","line":"Dezert bez cukru","slot":["Dezert","Dezert 1"],"flags":["Bez cukru"],"portion":"100–150 g","components":[{"name":"Raffaello krém s praženými mandlemi","portion":"100–150 g","slot":["Dezert","Dezert 1"],"kcal":438,"protein":6.3,"fat":38.0,"satfat":20.7,"carbs":17.5,"sugar":16.4,"fibre":0,"salt":0.1,"ingredients":["jogurt","mascarpone","strouhaný kokos","plátky mandlí","bílá čokoláda (pastilky)","krystalový cukr"],"allergens":["mléko","skořápkové plody","oxid siřičitý a siřičitany","sója"]}],"kcal":438,"isPackage":false,"name":"Raffaello krém s praženými mandlemi","ingredients":["bílá čokoláda (pastilky)","jogurt","krystalový cukr","mascarpone","plátky mandlí","strouhaný kokos"],"allergens":["mléko","oxid siřičitý a siřičitany","skořápkové plody","sója"]}],"meta":{"source":"yolofood.hu/etlap (jídelníček na týden 21.–27. 9. 2026)","fetched":"13. 9. 2026"}};
+
+const FLAG_CLASS = {"Keto / low carb":"keto","Bez mléka":"dairyfree","Vegetariánské":"veg","Bez cukru":"sugarfree","Řada Slim":"slim"};
+const DIET_FILTERS = ["Keto / low carb","Bez mléka","Vegetariánské","Bez cukru"];
+const LS_KEY = "yolo-picks-v1";
+
+const state = {
+  day: "FRIDAY",
+  q: "",
+  group: "ALL",
+  diets: [],
+  onlyPicked: false,
+  picked: [],
+  open: [],
+  expandAll: false
+};
+
+function norm(s){
+  return (s||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
+}
+function loadPicks(){
+  try{
+    const raw = window.localStorage.getItem(LS_KEY);
+    if (raw){
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) state.picked = arr.filter(k => DATA.dishes.some(d => d.day+"|"+d.code === k));
+    }
+  }catch(e){ /* private mode: picks stay in memory */ }
+}
+function savePicks(){
+  try{ window.localStorage.setItem(LS_KEY, JSON.stringify(state.picked)); }catch(e){}
+}
+function num(v, dec){
+  const n = Number(v) || 0;
+  return n.toLocaleString("cs-CZ", {minimumFractionDigits: dec, maximumFractionDigits: dec});
+}
+function byDay(day){ return DATA.dishes.filter(d => d.day === day); }
+function sourceRows(){ return state.day === "ALL" ? DATA.dishes : byDay(state.day); }
+function matches(d){
+  if (state.group !== "ALL" && d.group !== state.group) return false;
+  if (state.onlyPicked && !state.picked.includes(d.day+"|"+d.code)) return false;
+  for (const f of state.diets){ if (!d.flags.includes(f)) return false; }
+  const q = norm(state.q);
+  if (!q) return true;
+  const hay = norm([d.code, d.name, d.line, d.group, d.ingredients.join(" ")].join(" "));
+  const codeHay = norm(d.code).replace(/[\s-]/g,"");
+  const qCode = q.replace(/[\s-]/g,"");
+  return hay.includes(q) || (qCode.length > 1 && codeHay.includes(qCode));
+}
+function isOpen(d){ return state.expandAll || state.open.includes(d.day+"|"+d.code); }
+/* NOTE: every value interpolated into innerHTML below goes through esc() first, and DATA is our
+   own snapshot embedded at build time — no external/untrusted markup is ever injected. */
+function esc(s){
+  return (s||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function kcalLine(d){
+  const bits = ["<b>" + num(d.kcal,0) + "</b> kcal"];
+  if (!d.isPackage && d.components[0]) bits.push(num(d.components[0].protein,1) + " g bílkovin");
+  if (d.portion) bits.push(esc(d.portion));
+  return bits.join('<span class="sep">·</span>');
+}
+function flagsHtml(flags){
+  return flags.map(f => '<span class="pill ' + (FLAG_CLASS[f]||"") + '">' + esc(f) + "</span>").join("");
+}
+function nutTable(c, label){
+  const rows = [
+    ["t", "Energie", num(c.kcal,0) + " kcal"],
+    ["", "Tuky", num(c.fat,1) + " g"],
+    ["s", "z toho nasycené mastné kyseliny", num(c.satfat,1) + " g"],
+    ["", "Sacharidy", num(c.carbs,1) + " g"],
+    ["s", "z toho cukry", num(c.sugar,1) + " g"],
+    ["", "Vláknina", num(c.fibre,1) + " g"],
+    ["", "Bílkoviny", num(c.protein,1) + " g"],
+    ["", "Sůl", num(c.salt,2) + " g"]
+  ];
+  return '<table class="nt"><tbody>' + rows.map(r =>
+    '<tr class="' + r[0] + '"><th>' + esc(r[1]) + "</th><td>" + r[2] + "</td></tr>").join("") + "</tbody></table>";
+}
+function componentHtml(c, idx){
+  const head = esc(c.name) + '<span class="ck">' + num(c.kcal,0) + " kcal</span>";
+  return '<details class="comp"><summary>' + head + "</summary>" +
+    (c.portion ? '<p class="pkg-kcal">Porce: ' + esc(c.portion) + "</p>" : "") +
+    "<h4>Výživové údaje <span class='hint'>na porci, podle webu</span></h4>" + nutTable(c) +
+    "<h4>Složení</h4><p class='ings'>" + esc(c.ingredients.join(", ")) + "</p>" +
+    "<h4>Alergeny</h4><div class='flags'>" + (c.allergens.length
+        ? flagsHtml(c.allergens) : '<span class="pill">web neuvádí</span>') + "</div></details>";
+}
+function cardHtml(d){
+  const key = d.day + "|" + d.code;
+  const picked = state.picked.includes(key);
+  const open = isOpen(d);
+  let body = "";
+  if (d.isPackage){
+    body += '<p class="pkg-kcal"><b>Balíček</b> · ' + d.components.length + " položek · celkem " +
+            num(d.kcal,0) + " kcal</p>";
+    body += d.components.map(componentHtml).join("");
+    body += "<h4>Složení balíčku</h4><p class='ings'>" + esc(d.ingredients.join(", ")) + "</p>";
+    body += "<h4>Alergeny</h4><div class='flags'>" + (d.allergens.length
+            ? flagsHtml(d.allergens) : '<span class="pill">web neuvádí</span>') + "</div>";
+  } else {
+    const c = d.components[0];
+    body += "<h4>Výživové údaje <span class='hint'>na porci, podle webu</span></h4>" + nutTable(c);
+    body += "<h4>Složení (co jídlo obsahuje)</h4><p class='ings'>" + esc(c.ingredients.join(", ")) + "</p>";
+    body += "<h4>Alergeny</h4><div class='flags'>" + (c.allergens.length
+            ? flagsHtml(c.allergens) : '<span class="pill">web neuvádí</span>') + "</div>";
+  }
+  const tags = [d.line].concat(d.slot ? [d.slot.join(" · ")] : []);
+  return '<article class="card' + (open ? " open" : "") + (picked ? " picked" : "") + '" data-key="' + esc(key) + '">' +
+    '<div class="card-hd" role="button" tabindex="0" aria-expanded="' + (open ? "true" : "false") +
+      '" aria-label="' + esc(d.name) + '">' +
+      '<div class="hd-l">' +
+        '<div class="tags"><span class="line">' + esc(d.line) + "</span>" +
+          (d.slot && d.slot.length ? "<span>" + esc(d.slot.join(" · ")) + "</span>" : "") + "</div>" +
+        '<h3 class="nm">' + esc(d.name) + "</h3>" +
+        '<div class="nums">' + kcalLine(d) + "</div>" +
+        '<div class="flags">' + flagsHtml(d.flags) + "</div>" +
+      "</div>" +
+      '<div class="hd-r">' +
+        '<span class="code">' + esc(d.code) + "</span>" +
+        '<div class="hd-r2">' +
+          '<span class="chev" aria-hidden="true"></span>' +
+          '<button type="button" class="pick" data-pick="' + esc(key) + '" aria-pressed="' + (picked ? "true" : "false") +
+            '" aria-label="' + (picked ? "Odebrat z výběru: " : "Přidat do výběru: ") + esc(d.name) + '">' +
+            (picked ? "✓" : "+") + "</button>" +
+        "</div>" +
+      "</div>" +
+    "</div>" +
+    (open ? '<div class="card-bd">' + body + "</div>" : "") +
+  "</article>";
+}
+function renderChips(){
+  const host = document.querySelector("#chips");
+  if (!host) return;
+  const groups = ["ALL"].concat(DATA.groups);
+  let h = groups.map(g => '<button type="button" class="chip" data-group="' + esc(g) + '" aria-pressed="' +
+      (state.group === g ? "true" : "false") + '">' + esc(g === "ALL" ? "Vše" : g) + "</button>").join("");
+  h += '<span class="chip-sep"></span>';
+  h += DIET_FILTERS.map(f => '<button type="button" class="chip diet" data-diet="' + esc(f) + '" aria-pressed="' +
+      (state.diets.includes(f) ? "true" : "false") + '">' + esc(f) + "</button>").join("");
+  h += '<button type="button" class="chip diet" data-only="1" aria-pressed="' +
+      (state.onlyPicked ? "true" : "false") + '">Jen vybrané</button>';
+  host.innerHTML = h;
+}
+function render(){
+  const list = document.querySelector("#list");
+  if (!list) return;
+  const rows = sourceRows().filter(matches);
+  let html = "";
+  let lastGroup = null;
+  let lastDay = null;
+  for (const d of rows){
+    if (state.day === "ALL" && d.day !== lastDay){
+      html += '<div class="sec-h"><h2>' + esc((DATA.days.find(x => x.key === d.day) || {}).label || d.day) + "</h2></div>";
+      lastDay = d.day;
+      lastGroup = null;
+    }
+    if (d.group !== lastGroup){
+      const inGroup = rows.filter(x => x.group === d.group).length;
+      html += '<div class="sec-h"><h2>' + esc(d.group) + "</h2><span>" + inGroup + "</span></div>";
+      lastGroup = d.group;
+    }
+    html += cardHtml(d);
+  }
+  if (!rows.length){
+    html = '<p class="empty">Nic tu není — zkuste zrušit filtr nebo hledat jiný kód.</p>';
+  }
+  list.innerHTML = html;
+
+  const cnt = document.querySelector("#count");
+  if (cnt){
+    const dayLabel = (DATA.days.find(x => x.key === state.day) || {}).label ||
+      (state.day === "ALL" ? "oba dny" : "");
+    cnt.innerHTML = "<b>" + rows.length + "</b> " + (rows.length === 1 ? "položka" : rows.length < 5 ? "položky" : "položek") +
+      " · " + esc(dayLabel);
+  }
+  DATA.days.forEach(dy => {
+    const tab = document.querySelector("#tab-" + dy.key);
+    if (!tab) return;
+    tab.setAttribute("aria-selected", state.day === dy.key ? "true" : "false");
+    const sp = tab.querySelector(".cnt");
+    if (sp) sp.textContent = "(" + byDay(dy.key).length + ")";
+  });
+  const ex = document.querySelector("#expandAll");
+  if (ex) ex.textContent = state.expandAll ? "Zabalit vše" : "Rozbalit vše";
+}
+function renderTray(){
+  const tray = document.querySelector("#tray");
+  if (!tray) return;
+  const n = state.picked.length;
+  tray.hidden = n === 0;
+  const cEl = document.querySelector("#trayCount");
+  if (cEl) cEl.textContent = n;
+  const wEl = document.querySelector("#trayWord");
+  if (wEl) wEl.textContent = n === 1 ? "vybrané jídlo" : n < 5 ? "vybraná jídla" : "vybraných jídel";
+  const codes = document.querySelector("#trayCodes");
+  if (codes) codes.textContent = state.picked.map(k => k.split("|")[1]).join(", ");
+  const sb = document.querySelector("#shareBtn");
+  if (sb) sb.hidden = !(navigator.share);
+}
+function codesText(){
+  const byDayMap = new Map(DATA.days.map(d => [d.key, []]));
+  for (const k of state.picked){
+    const parts = k.split("|");
+    if (byDayMap.has(parts[0])) byDayMap.get(parts[0]).push(parts[1]);
+  }
+  const lines = [];
+  for (const [key, codes] of byDayMap){
+    if (!codes.length) continue;
+    const label = (DATA.days.find(d => d.key === key) || {}).label || key;
+    lines.push(label + ": " + codes.join(", "));
+  }
+  return lines.join("\n");
+}
+function toast(msg){
+  const t = document.querySelector("#toast");
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add("on");
+  window.clearTimeout(toast._h);
+  toast._h = window.setTimeout(() => t.classList.remove("on"), 2200);
+}
+function togglePick(key){
+  const i = state.picked.indexOf(key);
+  if (i >= 0) state.picked.splice(i,1); else state.picked.push(key);
+  savePicks();
+  render();
+  renderTray();
+}
+function toggleOpen(key){
+  const i = state.open.indexOf(key);
+  if (i >= 0) state.open.splice(i,1); else state.open.push(key);
+  render();
+}
+function copyCodes(){
+  const text = codesText();
+  const done = () => toast("Kódy zkopírovány");
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly","");
+  ta.style.position = "fixed";
+  ta.style.top = "-1000px";
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand("copy"); done(); }catch(e){ toast("Kopírování nešlo — kódy: " + text.replace(/\n/g, " / ")); }
+  document.body.removeChild(ta);
+}
+function bind(){
+  const list = document.querySelector("#list");
+  if (list){
+    list.addEventListener("click", ev => {
+      const pick = ev.target.closest("[data-pick]");
+      if (pick){ ev.stopPropagation(); togglePick(pick.getAttribute("data-pick")); return; }
+      const hd = ev.target.closest(".card-hd");
+      const card = ev.target.closest(".card");
+      if (hd && card){ toggleOpen(card.getAttribute("data-key")); }
+    });
+    list.addEventListener("keydown", ev => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      const hd = ev.target.closest(".card-hd");
+      const card = ev.target.closest(".card");
+      if (hd && card){ ev.preventDefault(); toggleOpen(card.getAttribute("data-key")); }
+    });
+  }
+  const chips = document.querySelector("#chips");
+  if (chips){
+    chips.addEventListener("click", ev => {
+      const b = ev.target.closest(".chip");
+      if (!b) return;
+      if (b.hasAttribute("data-group")) state.group = b.getAttribute("data-group");
+      else if (b.hasAttribute("data-diet")){
+        const f = b.getAttribute("data-diet");
+        const i = state.diets.indexOf(f);
+        if (i >= 0) state.diets.splice(i,1); else state.diets.push(f);
+      } else if (b.hasAttribute("data-only")) state.onlyPicked = !state.onlyPicked;
+      renderChips();
+      render();
+    });
+  }
+  document.querySelectorAll("[data-day]").forEach(btn => {
+    btn.addEventListener("click", () => { state.day = btn.getAttribute("data-day"); render(); });
+  });
+  const q = document.querySelector("#q");
+  if (q) q.addEventListener("input", () => { state.q = q.value; render(); });
+  const ex = document.querySelector("#expandAll");
+  if (ex) ex.addEventListener("click", () => { state.expandAll = !state.expandAll; state.open = []; render(); });
+  const cb = document.querySelector("#copyBtn");
+  if (cb) cb.addEventListener("click", copyCodes);
+  const cl = document.querySelector("#clearBtn");
+  if (cl) cl.addEventListener("click", () => { state.picked = []; savePicks(); render(); renderTray(); });
+  const sb = document.querySelector("#shareBtn");
+  if (sb){
+    sb.addEventListener("click", () => {
+      const text = "Vybraná jídla YoloFood (25.–26. 9.):\n" + codesText();
+      if (navigator.share){
+        navigator.share({title:"Vybraná jídla YoloFood", text}).catch(() => {});
+      } else {
+        copyCodes();
+      }
+    });
+  }
+  const src = document.querySelector("#src");
+  if (src) src.textContent = DATA.meta.source;
+  const fe = document.querySelector("#fetched");
+  if (fe) fe.textContent = DATA.meta.fetched;
+  window.addEventListener("beforeprint", () => {
+    state._saved = {day: state.day, q: state.q, group: state.group, onlyPicked: state.onlyPicked, expandAll: state.expandAll};
+    state.day = "ALL";
+    state.q = "";
+    state.group = "ALL";
+    state.onlyPicked = false;
+    state.expandAll = true;
+    render();
+  });
+  window.addEventListener("afterprint", () => {
+    if (!state._saved) return;
+    Object.assign(state, state._saved);
+    state.expandAll = false;
+    state._saved = null;
+    render();
+  });
+}
+
+loadPicks();
+try{
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("view") === "all"){ state.day = "ALL"; state.expandAll = true; }
+}catch(e){}
+if (Array.isArray(window.__YOLO_TEST__)) window.__YOLO_TEST__.run();
+renderChips();
+render();
+renderTray();
+bind();
+</script>
+</body>
+</html>
